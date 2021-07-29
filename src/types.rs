@@ -244,8 +244,6 @@ pub const ROOK: PieceType = PieceType(4);
 pub const QUEEN: PieceType = PieceType(5);
 pub const KING: PieceType = PieceType(6);
 
-pub const QUEEN_DIAGONAL: PieceType = PieceType(7);
-
 pub const ALL_PIECES: PieceType = PieceType(0);
 
 pub struct Pawn;

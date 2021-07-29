@@ -37,47 +37,47 @@ const KING_FLANK: [Bitboard; 8] = [
     KING_SIDE,
 ];
 
-// Evaluation struct contains various information computed and collected by
-// the evaluation functions.
+/// Evaluation struct contains various information computed and collected by
+/// the evaluation functions.
 struct EvalInfo<'a> {
     me: &'a material::Entry,
     pe: &'a mut pawns::Entry,
     mobility_area: [Bitboard; 2],
     mobility: [Score; 2],
 
-    // attacked_by[Color][PieceType] is a bitboard representing all squares
-    // attacked by a given color and piece type. Special "piece types" which
-    // are also calculated are QUEEN_DIAGONAL and ALL_PIECES.
+    /// attacked_by[Color][PieceType] is a bitboard representing all squares
+    /// attacked by a given color and piece type. Special "piece types" which
+    /// is also calculated is ALL_PIECES.
     attacked_by: [[Bitboard; 8]; 2],
 
-    // attacked_by2[Color] are the squares attacked by 2 pieces of a given
-    // color, possbily via x-ray or by one pawn and one piece. Diagonal x-ray
-    // through pawns or squares attacked by 2 pawns are not explicitly added.
+    /// attacked_by2[Color] are the squares attacked by 2 pieces of a given
+    /// color, possbily via x-ray or by one pawn and one piece. Diagonal x-ray
+    /// through pawns or squares attacked by 2 pawns are not explicitly added.
     attacked_by2: [Bitboard; 2],
 
-    // king_ring[Color] is the zone around the king which is considered by
-    // the king safety evaluation. This consists of the squares directly
-    // adjacent to the king, and (only for a king on its first rank) the
-    // squares two ranks in front of the king. For instances, if black's
-    // king is on g8, kine_ring[BLACK] is a bitboard containing the squares
-    // f8, h8, f7, g7, h7, f6, g6 and h6.
+    /// king_ring[Color] is the zone around the king which is considered by
+    /// the king safety evaluation. This consists of the squares directly
+    /// adjacent to the king, and (only for a king on its first rank) the
+    /// squares two ranks in front of the king. For instances, if black's
+    /// king is on g8, kine_ring[BLACK] is a bitboard containing the squares
+    /// f8, h8, f7, g7, h7, f6, g6 and h6.
     king_ring: [Bitboard; 2],
 
-    // king_attackers_count[Color] is the number of pieces of the given color
-    // which attack a square in the king_ring of the enemy king.
+    /// king_attackers_count[Color] is the number of pieces of the given color
+    /// which attack a square in the king_ring of the enemy king.
     king_attackers_count: [i32; 2],
 
-    // king_attackers_weight[Color] is the sum of the "weights" of the pieces
-    // of the given color which attack a square in the king_ring of the
-    // enemy king. The weights of the individual piece types are given by the
-    // same elements in the king_attack_weights array.
+    /// king_attackers_weight[Color] is the sum of the "weights" of the pieces
+    /// of the given color which attack a square in the king_ring of the
+    /// enemy king. The weights of the individual piece types are given by the
+    /// same elements in the king_attack_weights array.
     king_attackers_weight: [i32; 2],
 
-    // king_adjacent_zone_attacks_count[Color] is the number of attacks by
-    // the given color to squares directly adjacent to the enemy king. Pieces
-    // which attack more than one square are counted multiple times. For
-    // instances, if there is a white knight of g5 and black's king is on g8,
-    // this white knight adds 2 to kind_adjacent_zone_attackscount[WHITE].
+    /// king_adjacent_zone_attacks_count[Color] is the number of attacks by
+    /// the given color to squares directly adjacent to the enemy king. Pieces
+    /// which attack more than one square are counted multiple times. For
+    /// instances, if there is a white knight of g5 and black's king is on g8,
+    /// this white knight adds 2 to kind_adjacent_zone_attackscount[WHITE].
     king_adjacent_zone_attacks_count: [i32; 2],
 }
 
@@ -106,9 +106,9 @@ macro_rules! s {
 
 const S0: Score = Score::ZERO;
 
-// MOBILITY_BONUS[PieceType-2][attacked] contains bonuses for middle and end
-// game, indexed by piece type and number of attacked squares in the mobility
-// area.
+/// MOBILITY_BONUS[PieceType-2][attacked] contains bonuses for middle and end
+/// game, indexed by piece type and number of attacked squares in the mobility
+/// area.
 const MOBILITY_BONUS: [[Score; 32]; 4] = [
     // Knights
     [
@@ -252,22 +252,22 @@ const MOBILITY_BONUS: [[Score; 32]; 4] = [
     ],
 ];
 
-// OUTPOST[KNIGHT/BISHOP][supported by pawn contains bonuses for minor
-// pieces if they can reach an outpost square, bigger if that square is
-// supported by a pawn. If the minor piece occupied an output square, the
-// outscore is doubled.
+/// OUTPOST[KNIGHT/BISHOP][supported by pawn contains bonuses for minor
+/// pieces if they can reach an outpost square, bigger if that square is
+/// supported by a pawn. If the minor piece occupied an output square, the
+/// outscore is doubled.
 const OUTPOST: [[Score; 2]; 2] = [
     [s!(22, 6), s!(36, 12)], // Knight
     [s!(9, 2), s!(15, 5)],   // Bishop
 ];
 
-// ROOK_ON_FILE[semiopen/open] contains bonuses for each rook value when
-// there is no friendly pawns on the rook file.
+/// ROOK_ON_FILE[semiopen/open] contains bonuses for each rook value when
+/// there is no friendly pawns on the rook file.
 const ROOK_ON_FILE: [Score; 2] = [s!(20, 7), s!(45, 20)];
 
-// THREAT_BY_MINOR/BY_ROOK[attacked PieceType] contains bonuses according to
-// which piece type attacks which one. Attacks on lesser pieces which are
-// pawn-defended are not considered.
+/// THREAT_BY_MINOR/BY_ROOK[attacked PieceType] contains bonuses according to
+/// which piece type attacks which one. Attacks on lesser pieces which are
+/// pawn-defended are not considered.
 const THREAT_BY_MINOR: [Score; 8] = [
     s!(0, 0),
     s!(0, 31),
@@ -290,18 +290,18 @@ const THREAT_BY_ROOK: [Score; 8] = [
     S0,
 ];
 
-// THREAT_BY_KING[on one/on many] contains bonuses for king attacks on pawns
-// or pieces which are not pawn-defended.
+/// THREAT_BY_KING[on one/on many] contains bonuses for king attacks on pawns
+/// or pieces which are not pawn-defended.
 const THREAT_BY_KING: [Score; 2] = [s!(3, 65), s!(9, 145)];
 
-// PASSED[mg/eg][Rank] contains midgame and endgame bonuses for passed pawns.
-// We don't use a Score because we process the two components independently.
+/// PASSED[mg/eg][Rank] contains midgame and endgame bonuses for passed pawns.
+/// We don't use a Score because we process the two components independently.
 const PASSED: [[i32; 8]; 2] = [
     [0, 5, 5, 32, 70, 172, 217, 0],
     [0, 7, 13, 42, 70, 170, 269, 0],
 ];
 
-// PASSED_FILE[File] contains a bonus according to the file of a passed pawn
+/// PASSED_FILE[File] contains a bonus according to the file of a passed pawn
 const PASSED_FILE: [Score; 8] = [
     s!(9, 10),
     s!(2, 10),
@@ -313,14 +313,14 @@ const PASSED_FILE: [Score; 8] = [
     s!(9, 10),
 ];
 
-// Rank-dependent factor for a passed-pawn bonus
+/// Rank-dependent factor for a passed-pawn bonus
 const RANK_FACTOR: [i32; 8] = [0, 0, 0, 2, 7, 12, 19, 0];
 
-// KING_PROTECTOR[PieceType-2] contains a bonus according to distance from
-// king
+/// KING_PROTECTOR[PieceType-2] contains a bonus according to distance from
+/// king
 const KING_PROTECTOR: [Score; 4] = [s!(-3, -5), s!(-4, -3), s!(-3, 0), s!(-1, 1)];
 
-// Assorted bonuses and penalties used by evaluation
+/// Assorted bonuses and penalties used by evaluation
 const MINOR_BEHIND_PAWN: Score = s!(16, 0);
 const BISHOP_PAWNS: Score = s!(8, 12);
 const LONG_RANGED_BISHOP: Score = s!(22, 0);
@@ -334,27 +334,28 @@ const THREAT_BY_RANK: Score = s!(16, 3);
 const HANGING: Score = s!(52, 30);
 const WEAK_UNOPPOSED_PAWN: Score = s!(5, 25);
 const THREAT_BY_PAWN_PUSH: Score = s!(47, 26);
-const THREAT_BY_ATTACK_ON_QUEEN: Score = s!(42, 21);
+const THREAT_BY_SLIDER_ON_QUEEN: Score = s!(42, 21);
 const HINDER_PASSED_PAWN: Score = s!(8, 1);
 const KNIGHT_ON_QUEEN: Score = s!(21, 11);
 const TRAPPED_BISHOP_A1H1: Score = s!(50, 50);
+const CONNECTIVITY: Score = s!(3, 1);
 
-// king_attack_weights[PieceType] contains king attack weights by piece
-// type
+/// king_attack_weights[PieceType] contains king attack weights by piece
+/// type
 const KING_ATTACK_WEIGHTS: [i32; 8] = [0, 0, 78, 56, 45, 11, 0, 0];
 
-// Penalties for enemy's safe checks
+/// Penalties for enemy's safe checks
 const QUEEN_SAFE_CHECK: i32 = 780;
 const ROOK_SAFE_CHECK: i32 = 880;
 const BISHOP_SAFE_CHECK: i32 = 435;
 const KNIGHT_SAFE_CHECK: i32 = 790;
 
-// Threshold for lazy and space evaluation
+/// Threshold for lazy and space evaluation
 const LAZY_THRESHOLD: Value = Value(1500);
 const SPACE_THRESHOLD: Value = Value(12222);
 
-// initialize() computes king and pawn attacks and the king ring bitboard
-// for a given color. This is done at the beginning of the evaluation.
+/// initialize() computes king and pawn attacks and the king ring bitboard
+/// for a given color. This is done at the beginning of the evaluation.
 
 fn initialize<Us: ColorTrait>(pos: &Position, ei: &mut EvalInfo) {
     let us = Us::COLOR;
@@ -399,8 +400,8 @@ fn initialize<Us: ColorTrait>(pos: &Position, ei: &mut EvalInfo) {
     }
 }
 
-// evaluate_pieces() assigned bonuses and penalties to the pieces of a given
-// color and type.
+/// evaluate_pieces() assigned bonuses and penalties to the pieces of a given
+/// color and type.
 
 fn evaluate_pieces<Us: ColorTrait, Pt: PieceTypeTrait>(pos: &Position, ei: &mut EvalInfo) -> Score {
     let us = Us::COLOR;
@@ -415,10 +416,6 @@ fn evaluate_pieces<Us: ColorTrait, Pt: PieceTypeTrait>(pos: &Position, ei: &mut 
     let mut score = Score::ZERO;
 
     ei.attacked_by[us.0 as usize][pt.0 as usize] = Bitboard(0);
-
-    if pt == QUEEN {
-        ei.attacked_by[us.0 as usize][QUEEN_DIAGONAL.0 as usize] = Bitboard(0);
-    }
 
     for s in pos.square_list(us, pt) {
         // Find attacked squares, including x-ray attacks for bishops and rooks
@@ -440,11 +437,6 @@ fn evaluate_pieces<Us: ColorTrait, Pt: PieceTypeTrait>(pos: &Position, ei: &mut 
         ei.attacked_by[us.0 as usize][pt.0 as usize] |= b;
         ei.attacked_by[us.0 as usize][ALL_PIECES.0 as usize] |=
             ei.attacked_by[us.0 as usize][pt.0 as usize];
-
-        if pt == QUEEN {
-            ei.attacked_by[us.0 as usize][QUEEN_DIAGONAL.0 as usize] |=
-                b & pseudo_attacks(BISHOP, s);
-        }
 
         if b & ei.king_ring[them.0 as usize] != 0 {
             ei.king_attackers_count[us.0 as usize] += 1;
@@ -548,7 +540,7 @@ fn evaluate_pieces<Us: ColorTrait, Pt: PieceTypeTrait>(pos: &Position, ei: &mut 
     score
 }
 
-// evaluate_king() assigns bonuses and penalties to a king of a given color
+/// evaluate_king() assigns bonuses and penalties to a king of a given color
 
 fn evaluate_king<Us: ColorTrait>(pos: &Position, ei: &mut EvalInfo) -> Score {
     let us = Us::COLOR;
@@ -757,37 +749,37 @@ fn evaluate_threats<Us: ColorTrait>(pos: &Position, ei: &EvalInfo) -> Score {
 
     score += THREAT_BY_PAWN_PUSH * (popcount(b) as i32);
 
-    // Add a bonus for safe slider attack threats on opponent queen
-    let safe_threats =
-        !pos.pieces_c(us) & !ei.attacked_by2[them.0 as usize] & ei.attacked_by2[us.0 as usize];
-    b = (ei.attacked_by[us.0 as usize][BISHOP.0 as usize]
-        & ei.attacked_by[them.0 as usize][QUEEN_DIAGONAL.0 as usize])
-        | (ei.attacked_by[us.0 as usize][ROOK.0 as usize]
-            & ei.attacked_by[them.0 as usize][QUEEN.0 as usize]
-            & !ei.attacked_by[them.0 as usize][QUEEN_DIAGONAL.0 as usize]);
-
-    score += THREAT_BY_ATTACK_ON_QUEEN * popcount(b & safe_threats) as i32;
-
-    // Bonus for knight threats on the next moves against enemy queen
+    // Bonus for threats on the next moves against enemy queen
     if pos.count(them, QUEEN) == 1 {
-        b = pos.attacks_from(KNIGHT, pos.square(them, QUEEN))
-            & ei.attacked_by[us.0 as usize][KNIGHT.0 as usize]
-            & !pos.pieces_cpp(us, PAWN, KING)
-            & !strongly_protected;
+        let s = pos.square(them, QUEEN);
+        let safe_threats = ei.mobility_area[us.0 as usize] & !strongly_protected;
 
-        score += KNIGHT_ON_QUEEN * popcount(b) as i32;
+        b = ei.attacked_by[us.0 as usize][KNIGHT.0 as usize] & pos.attacks_from(KNIGHT, s);
+
+        score += KNIGHT_ON_QUEEN * popcount(b & safe_threats) as i32;
+
+        b = (ei.attacked_by[us.0 as usize][BISHOP.0 as usize] & pos.attacks_from(BISHOP, s))
+            | (ei.attacked_by[us.0 as usize][ROOK.0 as usize] & pos.attacks_from(ROOK, s));
+
+        score += THREAT_BY_SLIDER_ON_QUEEN
+            * popcount(b & safe_threats & ei.attacked_by2[us.0 as usize]) as i32;
     }
+
+    // Connectivity: ensure that knights, bishops, rooks, and queens are protected
+    b = (pos.pieces_c(us) ^ pos.pieces_cpp(us, PAWN, KING))
+        & ei.attacked_by[us.0 as usize][ALL_PIECES.0 as usize];
+    score += CONNECTIVITY * popcount(b) as i32;
 
     score
 }
 
-// Helper function
+/// Helper function
 fn capped_distance(s1: Square, s2: Square) -> i32 {
     std::cmp::min(Square::distance(s1, s2), 5) as i32
 }
 
-// evaluate_passed_pawns() evaluates the passed pawns and candidate passed
-// pawns of the given color.
+/// evaluate_passed_pawns() evaluates the passed pawns and candidate passed
+/// pawns of the given color.
 
 fn evaluate_passed_pawns<Us: ColorTrait>(pos: &Position, ei: &EvalInfo) -> Score {
     let us = Us::COLOR;

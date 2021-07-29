@@ -861,11 +861,14 @@ fn search<NT: NodeType>(
         }
     }
 
+    let improving;
+
     // Step 6. Evaluate the position statically
     loop {
         let eval;
         if in_check {
             ss[5].static_eval = Value::NONE;
+            improving = true;
             break; // goto moves_loop;
         } else if tt_hit {
             // Never assume anything about values stored in TT
@@ -906,7 +909,7 @@ fn search<NT: NodeType>(
             );
         }
 
-        let improving = ss[5].static_eval >= ss[3].static_eval || ss[3].static_eval == Value::NONE;
+        improving = ss[5].static_eval >= ss[3].static_eval || ss[3].static_eval == Value::NONE;
 
         if skip_early_pruning || pos.non_pawn_material_c(pos.side_to_move()) == Value::ZERO {
             break; // goto moves_loop;
@@ -1081,8 +1084,6 @@ fn search<NT: NodeType>(
 
     let mut mp = MovePicker::new(pos, tt_move, depth, ss);
     let mut value = best_value;
-
-    let improving = ss[5].static_eval >= ss[3].static_eval || ss[3].static_eval == Value::NONE;
 
     let singular_extension_node = !root_node
         && depth >= 8 * ONE_PLY
