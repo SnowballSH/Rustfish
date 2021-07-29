@@ -101,7 +101,7 @@ static mut OPTIONS: *mut Vec<Opt> = 0 as *mut Vec<Opt>;
 
 pub fn init() {
     let mut opts = Box::new(Vec::new());
-    opts.push(Opt::new("Contempt", OptVal::spin(18, -100, 100), None));
+    opts.push(Opt::new("Contempt", OptVal::spin(12, -100, 100), None));
     opts.push(Opt::new(
         "Analysis Contempt",
         OptVal::combo("Off var Off var White var Black"),

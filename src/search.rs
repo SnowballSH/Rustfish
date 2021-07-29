@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+use std;
+use std::io::stdout;
+use std::io::Write;
+use std::time::Instant;
+
 use bitboard::*;
 use evaluate;
 use evaluate::evaluate;
@@ -13,11 +18,6 @@ use tt;
 use types::*;
 use uci;
 use ucioption;
-
-use std;
-use std::io::stdout;
-use std::io::Write;
-use std::time::Instant;
 
 pub const CM_THRESHOLD: i32 = 0;
 
@@ -142,6 +142,7 @@ pub fn limits() -> &'static mut LimitsType {
 // Different node types
 #[derive(Clone, Copy, PartialEq, Eq)]
 struct NonPv;
+
 struct Pv;
 
 trait NodeType {
@@ -161,8 +162,8 @@ impl NodeType for Pv {
 const SKIP_SIZE: [i32; 20] = [1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4];
 const SKIP_PHASE: [i32; 20] = [0, 1, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 6, 7];
 
-fn futility_margin(d: Depth) -> Value {
-    Value(150 * d / ONE_PLY)
+fn futility_margin(d: Depth, improving: bool) -> Value {
+    Value((175 - 50 * improving as i32) * d / ONE_PLY)
 }
 
 const RAZOR_MARGIN1: i32 = 590;
@@ -495,14 +496,8 @@ pub fn thread_search(pos: &mut Position, _th: &threads::ThreadCtrl) {
                     pos.root_moves[pos.pv_idx].previous_score + delta,
                     Value::INFINITE,
                 );
-                let ct = base_ct
-                    + (if best_value > Value(500) {
-                        50
-                    } else if best_value < Value(-500) {
-                        -50
-                    } else {
-                        best_value.0 / 10
-                    });
+                let mut ct = base_ct;
+                ct += 48 * (best_value.0 as f32 / 128.0).atan().round() as i32;
                 let ct = Score::make(ct, ct / 2);
                 unsafe { evaluate::CONTEMPT = if us == WHITE { ct } else { -ct } }
             }
@@ -747,8 +742,7 @@ fn search<NT: NodeType>(
         && tt_hit
         && tte.depth() >= depth
         && tt_value != Value::NONE // Possible in case of TT access race
-        && (if tt_value >= beta { tte.bound() & Bound::LOWER != 0 }
-                           else { tte.bound() & Bound::UPPER != 0 })
+        && (if tt_value >= beta { tte.bound() & Bound::LOWER != 0 } else { tte.bound() & Bound::UPPER != 0 })
     {
         // If tt_move is quiet, update move sorting heuristic on TT hit
         if tt_move != Move::NONE {
@@ -912,6 +906,8 @@ fn search<NT: NodeType>(
             );
         }
 
+        let improving = ss[5].static_eval >= ss[3].static_eval || ss[3].static_eval == Value::NONE;
+
         if skip_early_pruning || pos.non_pawn_material_c(pos.side_to_move()) == Value::ZERO {
             break; // goto moves_loop;
         }
@@ -932,7 +928,7 @@ fn search<NT: NodeType>(
         // Step 8. Futility pruning: child node (skipped when in check)
         if !root_node
             && depth < 7 * ONE_PLY
-            && eval - futility_margin(depth) >= beta
+            && eval - futility_margin(depth, improving) >= beta
             && eval < Value::KNOWN_WIN
         {
             return eval;
@@ -1577,8 +1573,7 @@ fn qsearch<NT: NodeType, InCheck: Bool>(
         && tt_hit
         && tte.depth() >= tt_depth
         && tt_value != Value::NONE // Only in case of TT access race
-        && (if tt_value >= beta { tte.bound() & Bound::LOWER != 0 }
-            else { tte.bound() & Bound::UPPER != 0 })
+        && (if tt_value >= beta { tte.bound() & Bound::LOWER != 0 } else { tte.bound() & Bound::UPPER != 0 })
     {
         return tt_value;
     }

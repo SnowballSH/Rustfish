@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+use std;
+
 use bitboard::*;
 use material;
 use pawns;
 use position::Position;
 use types::*;
-
-use std;
 
 pub const TEMPO: Value = Value(20);
 
@@ -84,8 +84,8 @@ struct EvalInfo<'a> {
 impl<'a> EvalInfo<'a> {
     fn new(me: &'a material::Entry, pe: &'a mut pawns::Entry) -> EvalInfo<'a> {
         EvalInfo {
-            me: me,
-            pe: pe,
+            me,
+            pe,
             mobility_area: [Bitboard(0); 2],
             mobility: [Score::ZERO; 2],
             attacked_by: [[Bitboard(0); 8]; 2],
@@ -98,7 +98,7 @@ impl<'a> EvalInfo<'a> {
     }
 }
 
-macro_rules! S {
+macro_rules! s {
     ($x:expr, $y:expr) => {
         Score(($y << 16) + $x)
     };
@@ -112,15 +112,15 @@ const S0: Score = Score::ZERO;
 const MOBILITY_BONUS: [[Score; 32]; 4] = [
     // Knights
     [
-        S!(-75, -76),
-        S!(-57, -54),
-        S!(-9, -28),
-        S!(-2, -10),
-        S!(6, 5),
-        S!(14, 12),
-        S!(22, 26),
-        S!(29, 29),
-        S!(36, 29),
+        s!(-75, -76),
+        s!(-57, -54),
+        s!(-9, -28),
+        s!(-2, -10),
+        s!(6, 5),
+        s!(14, 12),
+        s!(22, 26),
+        s!(29, 29),
+        s!(36, 29),
         S0,
         S0,
         S0,
@@ -147,20 +147,20 @@ const MOBILITY_BONUS: [[Score; 32]; 4] = [
     ],
     // Bishops
     [
-        S!(-48, -59),
-        S!(-20, -23),
-        S!(16, -3),
-        S!(26, 13),
-        S!(38, 24),
-        S!(51, 42),
-        S!(55, 54),
-        S!(63, 57),
-        S!(63, 65),
-        S!(68, 73),
-        S!(81, 78),
-        S!(81, 86),
-        S!(91, 88),
-        S!(98, 97),
+        s!(-48, -59),
+        s!(-20, -23),
+        s!(16, -3),
+        s!(26, 13),
+        s!(38, 24),
+        s!(51, 42),
+        s!(55, 54),
+        s!(63, 57),
+        s!(63, 65),
+        s!(68, 73),
+        s!(81, 78),
+        s!(81, 86),
+        s!(91, 88),
+        s!(98, 97),
         S0,
         S0,
         S0,
@@ -182,21 +182,21 @@ const MOBILITY_BONUS: [[Score; 32]; 4] = [
     ],
     // Rooks
     [
-        S!(-58, -76),
-        S!(-27, -18),
-        S!(-15, 28),
-        S!(-10, 55),
-        S!(-5, 69),
-        S!(-2, 82),
-        S!(9, 112),
-        S!(16, 118),
-        S!(30, 132),
-        S!(29, 142),
-        S!(32, 155),
-        S!(38, 165),
-        S!(46, 166),
-        S!(48, 169),
-        S!(58, 171),
+        s!(-58, -76),
+        s!(-27, -18),
+        s!(-15, 28),
+        s!(-10, 55),
+        s!(-5, 69),
+        s!(-2, 82),
+        s!(9, 112),
+        s!(16, 118),
+        s!(30, 132),
+        s!(29, 142),
+        s!(32, 155),
+        s!(38, 165),
+        s!(46, 166),
+        s!(48, 169),
+        s!(58, 171),
         S0,
         S0,
         S0,
@@ -217,34 +217,34 @@ const MOBILITY_BONUS: [[Score; 32]; 4] = [
     ],
     // Queens
     [
-        S!(-39, -36),
-        S!(-21, -15),
-        S!(3, 8),
-        S!(3, 18),
-        S!(14, 34),
-        S!(22, 54),
-        S!(28, 61),
-        S!(41, 73),
-        S!(43, 79),
-        S!(48, 92),
-        S!(56, 94),
-        S!(60, 104),
-        S!(60, 113),
-        S!(66, 120),
-        S!(67, 123),
-        S!(70, 126),
-        S!(71, 133),
-        S!(73, 136),
-        S!(79, 140),
-        S!(88, 143),
-        S!(88, 148),
-        S!(99, 166),
-        S!(102, 170),
-        S!(102, 175),
-        S!(106, 184),
-        S!(109, 191),
-        S!(113, 206),
-        S!(116, 212),
+        s!(-39, -36),
+        s!(-21, -15),
+        s!(3, 8),
+        s!(3, 18),
+        s!(14, 34),
+        s!(22, 54),
+        s!(28, 61),
+        s!(41, 73),
+        s!(43, 79),
+        s!(48, 92),
+        s!(56, 94),
+        s!(60, 104),
+        s!(60, 113),
+        s!(66, 120),
+        s!(67, 123),
+        s!(70, 126),
+        s!(71, 133),
+        s!(73, 136),
+        s!(79, 140),
+        s!(88, 143),
+        s!(88, 148),
+        s!(99, 166),
+        s!(102, 170),
+        s!(102, 175),
+        s!(106, 184),
+        s!(109, 191),
+        s!(113, 206),
+        s!(116, 212),
         S0,
         S0,
         S0,
@@ -257,42 +257,42 @@ const MOBILITY_BONUS: [[Score; 32]; 4] = [
 // supported by a pawn. If the minor piece occupied an output square, the
 // outscore is doubled.
 const OUTPOST: [[Score; 2]; 2] = [
-    [S!(22, 6), S!(36, 12)], // Knight
-    [S!(9, 2), S!(15, 5)],   // Bishop
+    [s!(22, 6), s!(36, 12)], // Knight
+    [s!(9, 2), s!(15, 5)],   // Bishop
 ];
 
 // ROOK_ON_FILE[semiopen/open] contains bonuses for each rook value when
 // there is no friendly pawns on the rook file.
-const ROOK_ON_FILE: [Score; 2] = [S!(20, 7), S!(45, 20)];
+const ROOK_ON_FILE: [Score; 2] = [s!(20, 7), s!(45, 20)];
 
 // THREAT_BY_MINOR/BY_ROOK[attacked PieceType] contains bonuses according to
 // which piece type attacks which one. Attacks on lesser pieces which are
 // pawn-defended are not considered.
 const THREAT_BY_MINOR: [Score; 8] = [
-    S!(0, 0),
-    S!(0, 31),
-    S!(39, 42),
-    S!(57, 44),
-    S!(68, 112),
-    S!(47, 120),
+    s!(0, 0),
+    s!(0, 31),
+    s!(39, 42),
+    s!(57, 44),
+    s!(68, 112),
+    s!(47, 120),
     S0,
     S0,
 ];
 
 const THREAT_BY_ROOK: [Score; 8] = [
-    S!(0, 0),
-    S!(0, 24),
-    S!(38, 71),
-    S!(38, 61),
-    S!(0, 38),
-    S!(36, 38),
+    s!(0, 0),
+    s!(0, 24),
+    s!(38, 71),
+    s!(38, 61),
+    s!(0, 38),
+    s!(36, 38),
     S0,
     S0,
 ];
 
 // THREAT_BY_KING[on one/on many] contains bonuses for king attacks on pawns
 // or pieces which are not pawn-defended.
-const THREAT_BY_KING: [Score; 2] = [S!(3, 65), S!(9, 145)];
+const THREAT_BY_KING: [Score; 2] = [s!(3, 65), s!(9, 145)];
 
 // PASSED[mg/eg][Rank] contains midgame and endgame bonuses for passed pawns.
 // We don't use a Score because we process the two components independently.
@@ -303,14 +303,14 @@ const PASSED: [[i32; 8]; 2] = [
 
 // PASSED_FILE[File] contains a bonus according to the file of a passed pawn
 const PASSED_FILE: [Score; 8] = [
-    S!(9, 10),
-    S!(2, 10),
-    S!(1, -8),
-    S!(-20, -12),
-    S!(-20, -12),
-    S!(1, -8),
-    S!(2, 10),
-    S!(9, 10),
+    s!(9, 10),
+    s!(2, 10),
+    s!(1, -8),
+    s!(-20, -12),
+    s!(-20, -12),
+    s!(1, -8),
+    s!(2, 10),
+    s!(9, 10),
 ];
 
 // Rank-dependent factor for a passed-pawn bonus
@@ -318,25 +318,26 @@ const RANK_FACTOR: [i32; 8] = [0, 0, 0, 2, 7, 12, 19, 0];
 
 // KING_PROTECTOR[PieceType-2] contains a bonus according to distance from
 // king
-const KING_PROTECTOR: [Score; 4] = [S!(-3, -5), S!(-4, -3), S!(-3, 0), S!(-1, 1)];
+const KING_PROTECTOR: [Score; 4] = [s!(-3, -5), s!(-4, -3), s!(-3, 0), s!(-1, 1)];
 
 // Assorted bonuses and penalties used by evaluation
-const MINOR_BEHIND_PAWN: Score = S!(16, 0);
-const BISHOP_PAWNS: Score = S!(8, 12);
-const LONG_RANGED_BISHOP: Score = S!(22, 0);
-const ROOK_ON_PAWN: Score = S!(8, 24);
-const TRAPPED_ROOK: Score = S!(92, 0);
-const WEAK_QUEEN: Score = S!(50, 10);
-const CLOSE_ENEMIES: Score = S!(7, 0);
-const PAWNLESS_FLANK: Score = S!(20, 80);
-const THREAT_BY_SAFE_PAWN: Score = S!(175, 168);
-const THREAT_BY_RANK: Score = S!(16, 3);
-const HANGING: Score = S!(52, 30);
-const WEAK_UNOPPOSED_PAWN: Score = S!(5, 25);
-const THREAT_BY_PAWN_PUSH: Score = S!(47, 26);
-const THREAT_BY_ATTACK_ON_QUEEN: Score = S!(42, 21);
-const HINDER_PASSED_PAWN: Score = S!(8, 1);
-const TRAPPED_BISHOP_A1H1: Score = S!(50, 50);
+const MINOR_BEHIND_PAWN: Score = s!(16, 0);
+const BISHOP_PAWNS: Score = s!(8, 12);
+const LONG_RANGED_BISHOP: Score = s!(22, 0);
+const ROOK_ON_PAWN: Score = s!(8, 24);
+const TRAPPED_ROOK: Score = s!(92, 0);
+const WEAK_QUEEN: Score = s!(50, 10);
+const CLOSE_ENEMIES: Score = s!(7, 0);
+const PAWNLESS_FLANK: Score = s!(20, 80);
+const THREAT_BY_SAFE_PAWN: Score = s!(175, 168);
+const THREAT_BY_RANK: Score = s!(16, 3);
+const HANGING: Score = s!(52, 30);
+const WEAK_UNOPPOSED_PAWN: Score = s!(5, 25);
+const THREAT_BY_PAWN_PUSH: Score = s!(47, 26);
+const THREAT_BY_ATTACK_ON_QUEEN: Score = s!(42, 21);
+const HINDER_PASSED_PAWN: Score = s!(8, 1);
+const KNIGHT_ON_QUEEN: Score = s!(21, 11);
+const TRAPPED_BISHOP_A1H1: Score = s!(50, 50);
 
 // king_attack_weights[PieceType] contains king attack weights by piece
 // type
@@ -767,6 +768,16 @@ fn evaluate_threats<Us: ColorTrait>(pos: &Position, ei: &EvalInfo) -> Score {
 
     score += THREAT_BY_ATTACK_ON_QUEEN * popcount(b & safe_threats) as i32;
 
+    // Bonus for knight threats on the next moves against enemy queen
+    if pos.count(them, QUEEN) == 1 {
+        b = pos.attacks_from(KNIGHT, pos.square(them, QUEEN))
+            & ei.attacked_by[us.0 as usize][KNIGHT.0 as usize]
+            & !pos.pieces_cpp(us, PAWN, KING)
+            & !strongly_protected;
+
+        score += KNIGHT_ON_QUEEN * popcount(b) as i32;
+    }
+
     score
 }
 
@@ -914,12 +925,8 @@ fn evaluate_space<Us: ColorTrait>(pos: &Position, ei: &EvalInfo) -> Score {
         behind << 16
     };
 
-    // Since space_mask[us] is fully on our half of the board...
-    debug_assert!((safe >> (if us == WHITE { 32 } else { 0 })).0 as u32 == 0);
-
     // ...count safe + (behind & safe) with a single popcount.
-    let bonus =
-        popcount((if us == WHITE { safe << 32 } else { safe >> 32 }) | (behind & safe)) as i32;
+    let bonus = (popcount(safe) + popcount(behind & safe)) as i32;
     let weight = pos.count(us, ALL_PIECES) - 2 * ei.pe.open_files();
 
     Score::make(bonus * weight * weight / 16, 0)

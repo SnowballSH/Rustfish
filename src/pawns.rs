@@ -6,12 +6,12 @@ use types::*;
 
 use std;
 
-macro_rules! V {
+macro_rules! v {
     ($x:expr) => {
         Value($x)
     };
 }
-macro_rules! S {
+macro_rules! s {
     ($x:expr, $y:expr) => {
         Score(($y << 16) + $x)
     };
@@ -20,32 +20,32 @@ macro_rules! S {
 const V0: Value = Value::ZERO;
 
 // Isolated pawn penalty
-const ISOLATED: Score = S!(13, 18);
+const ISOLATED: Score = s!(13, 18);
 
 // Backward pawn penalty
-const BACKWARD: Score = S!(24, 12);
+const BACKWARD: Score = s!(24, 12);
 
 // Connected pawn bonus by opposed, phalanx, #support and rank
 static mut CONNECTED: [[[[Score; 8]; 3]; 2]; 2] = [[[[Score::ZERO; 8]; 3]; 2]; 2];
 
 // Doubled pawn penalty
-const DOUBLED: Score = S!(18, 38);
+const DOUBLED: Score = s!(18, 38);
 
 // Weakness of our pawn shelter in front of the king by
 // [is_king_file][distance from edge][rank]. RANK_1 = 0 is used for files
 // where we have no pawns or our pawn is behind our king.
 const SHELTER_WEAKNESS: [[[Value; 8]; 4]; 2] = [
     [
-        [V!(98), V!(20), V!(11), V!(42), V!(83), V!(84), V!(101), V0],
-        [V!(103), V!(8), V!(33), V!(86), V!(87), V!(105), V!(113), V0],
-        [V!(100), V!(2), V!(65), V!(95), V!(59), V!(89), V!(115), V0],
-        [V!(72), V!(6), V!(52), V!(74), V!(83), V!(84), V!(112), V0],
+        [v!(98), v!(20), v!(11), v!(42), v!(83), v!(84), v!(101), V0],
+        [v!(103), v!(8), v!(33), v!(86), v!(87), v!(105), v!(113), V0],
+        [v!(100), v!(2), v!(65), v!(95), v!(59), v!(89), v!(115), V0],
+        [v!(72), v!(6), v!(52), v!(74), v!(83), v!(84), v!(112), V0],
     ],
     [
-        [V!(105), V!(19), V!(3), V!(27), V!(85), V!(93), V!(84), V0],
-        [V!(121), V!(7), V!(33), V!(95), V!(112), V!(86), V!(72), V0],
-        [V!(121), V!(26), V!(65), V!(90), V!(65), V!(76), V!(117), V0],
-        [V!(79), V!(0), V!(45), V!(65), V!(94), V!(92), V!(105), V0],
+        [v!(105), v!(19), v!(3), v!(27), v!(85), v!(93), v!(84), V0],
+        [v!(121), v!(7), v!(33), v!(95), v!(112), v!(86), v!(72), V0],
+        [v!(121), v!(26), v!(65), v!(90), v!(65), v!(76), v!(117), V0],
+        [v!(79), v!(0), v!(45), v!(65), v!(94), v!(92), v!(105), V0],
     ],
 ];
 
@@ -56,37 +56,37 @@ const SHELTER_WEAKNESS: [[[Value; 8]; 4]; 2] = [
 const STORM_DANGER: [[[Value; 8]; 4]; 4] = [
     // BlockedByKing
     [
-        [V!(0), V!(-290), V!(-274), V!(57), V!(41), V0, V0, V0],
-        [V!(0), V!(60), V!(144), V!(39), V!(13), V0, V0, V0],
-        [V!(0), V!(65), V!(141), V!(41), V!(34), V0, V0, V0],
-        [V!(0), V!(53), V!(127), V!(56), V!(14), V0, V0, V0],
+        [v!(0), v!(-290), v!(-274), v!(57), v!(41), V0, V0, V0],
+        [v!(0), v!(60), v!(144), v!(39), v!(13), V0, V0, V0],
+        [v!(0), v!(65), v!(141), v!(41), v!(34), V0, V0, V0],
+        [v!(0), v!(53), v!(127), v!(56), v!(14), V0, V0, V0],
     ],
     // Unopposed
     [
-        [V!(4), V!(73), V!(132), V!(46), V!(31), V0, V0, V0],
-        [V!(1), V!(64), V!(143), V!(26), V!(13), V0, V0, V0],
-        [V!(1), V!(47), V!(110), V!(44), V!(24), V0, V0, V0],
-        [V!(0), V!(72), V!(127), V!(50), V!(31), V0, V0, V0],
+        [v!(4), v!(73), v!(132), v!(46), v!(31), V0, V0, V0],
+        [v!(1), v!(64), v!(143), v!(26), v!(13), V0, V0, V0],
+        [v!(1), v!(47), v!(110), v!(44), v!(24), V0, V0, V0],
+        [v!(0), v!(72), v!(127), v!(50), v!(31), V0, V0, V0],
     ],
     // BlockedByPawn
     [
-        [V!(0), V!(0), V!(79), V!(23), V!(1), V0, V0, V0],
-        [V!(0), V!(0), V!(148), V!(27), V!(2), V0, V0, V0],
-        [V!(0), V!(0), V!(161), V!(16), V!(1), V0, V0, V0],
-        [V!(0), V!(0), V!(171), V!(22), V!(15), V0, V0, V0],
+        [v!(0), v!(0), v!(79), v!(23), v!(1), V0, V0, V0],
+        [v!(0), v!(0), v!(148), v!(27), v!(2), V0, V0, V0],
+        [v!(0), v!(0), v!(161), v!(16), v!(1), V0, V0, V0],
+        [v!(0), v!(0), v!(171), v!(22), v!(15), V0, V0, V0],
     ],
     // Unblocked
     [
-        [V!(22), V!(45), V!(104), V!(62), V!(6), V0, V0, V0],
-        [V!(31), V!(30), V!(99), V!(39), V!(19), V0, V0, V0],
-        [V!(23), V!(29), V!(96), V!(41), V!(15), V0, V0, V0],
-        [V!(21), V!(23), V!(116), V!(41), V!(15), V0, V0, V0],
+        [v!(22), v!(45), v!(104), v!(62), v!(6), V0, V0, V0],
+        [v!(31), v!(30), v!(99), v!(39), v!(19), V0, V0, V0],
+        [v!(23), v!(29), v!(96), v!(41), v!(15), V0, V0, V0],
+        [v!(21), v!(23), v!(116), v!(41), v!(15), V0, V0, V0],
     ],
 ];
 
 // Max bonus for king safety. Corresponds to start position with all the
 // pawns in front of the king and no enemy pawns on the horizon.
-const MAX_SAFETY_BONUS: Value = V!(258);
+const MAX_SAFETY_BONUS: Value = v!(258);
 
 // pawns::Entry contains various information about a pawn structure. A lookup
 // in the pawn hash table (performed by calling the probing function) returns

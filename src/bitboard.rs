@@ -227,7 +227,7 @@ const ROOK_INIT: [MagicInit; 64] = [
     m!(0x0001ffff9dffa333, 14826),
 ];
 
-// Compute the attack's index using the 'magic bitboards' approach
+/// Compute the attack's index using the 'magic bitboards' approach
 fn index_bishop(s: Square, occupied: Bitboard) -> usize {
     unsafe {
         (u64::wrapping_mul(
@@ -456,13 +456,13 @@ impl Iterator for Bitboard {
     }
 }
 
-// file_bb() return a bitboard representing all the squares on the given file.
+/// file_bb() return a bitboard representing all the squares on the given file.
 
 pub fn file_bb(f: File) -> Bitboard {
     unsafe { FILE_BB[f as usize] }
 }
 
-// bitboard!(A1, A2, ...) creates a bitboard with squares A1, A2, ...
+/// bitboard!(A1, A2, ...) creates a bitboard with squares A1, A2, ...
 
 macro_rules! bitboard {
     () => { Bitboard(0) };
@@ -470,9 +470,25 @@ macro_rules! bitboard {
     ($sq:ident, $($sqs:ident),+) => { bitboard!($($sqs),*) | Square::$sq };
 }
 
-// shift() moves a bitboard one step along direction D. Mainly for pawns.
-
 impl Bitboard {
+    /*
+    fn make_bitboard_recursion(mut squares: Vec<Square>) -> Self {
+        let s = squares.pop();
+        if let Some(s) = s {
+            Bitboard(1u64 << s.0) | Bitboard::make_bitboard_recursion(squares)
+        } else {
+            Bitboard(0)
+        }
+    }
+
+    /// make_bitboard() returns a bitboard from a list of squares
+    pub fn make_bitboard(mut squares: Vec<Square>) -> Self {
+        squares.reverse();
+        Bitboard::make_bitboard_recursion(squares)
+    }
+     */
+
+    /// shift() moves a bitboard one step along direction D. Mainly for pawns.
     pub fn shift(self, d: Direction) -> Bitboard {
         match d {
             NORTH => self << 8,
@@ -486,55 +502,49 @@ impl Bitboard {
     }
 }
 
-// adjacent_files_bb() returns a bitboard representing all the squares on
-// the adjacent files of the given one.
-
+/// adjacent_files_bb() returns a bitboard representing all the squares on
+/// the adjacent files of the given one.
 #[inline]
 pub fn adjacent_files_bb(f: File) -> Bitboard {
     unsafe { ADJACENT_FILES_BB[f as usize] }
 }
 
-// between_bb() returns a bitboard representing all the squares between the
-// two given ones. For instance, between_bb(Square::C4, Square::F7) returns
-// a bitboard with the bits for squares d5 and e6 set. If s1 and s2 are not
-// on the same rank, file or diagonal, an empty bitboard is returned.
-
+/// between_bb() returns a bitboard representing all the squares between the
+/// two given ones. For instance, between_bb(Square::C4, Square::F7) returns
+/// a bitboard with the bits for squares d5 and e6 set. If s1 and s2 are not
+/// on the same rank, file or diagonal, an empty bitboard is returned.
 #[inline]
 pub fn between_bb(s1: Square, s2: Square) -> Bitboard {
     unsafe { BETWEEN_BB[s1.0 as usize][s2.0 as usize] }
 }
 
-// forward_ranks_bb() returns a bitboard representing all the squares on all
-// the ranks in front of the given one, from the point of view of the given
-// color. For instance, forward_ranks_bb(BLACK, Square::D3) returns the 16
-// squares on ranks 1 and 2.
-
+/// forward_ranks_bb() returns a bitboard representing all the squares on all
+/// the ranks in front of the given one, from the point of view of the given
+/// color. For instance, forward_ranks_bb(BLACK, Square::D3) returns the 16
+/// squares on ranks 1 and 2.
 #[inline]
 pub fn forward_ranks_bb(c: Color, s: Square) -> Bitboard {
     unsafe { FORWARD_RANKS_BB[c.0 as usize][s.rank() as usize] }
 }
 
-// forward_file_bb() returns a bitboard representing all the squares along
-// the line in front of the given one, from the point of view of the given
-// color.
-
+/// forward_file_bb() returns a bitboard representing all the squares along
+/// the line in front of the given one, from the point of view of the given
+/// color.
 #[inline]
 pub fn forward_file_bb(c: Color, s: Square) -> Bitboard {
     unsafe { FORWARD_FILE_BB[c.0 as usize][s.0 as usize] }
 }
 
-// pawn_attack_span() returns a bitboard representing all the squares that
-// can be attacked by a pawn of the given color when it moves along its file,
-// starting from the given square.
-
+/// pawn_attack_span() returns a bitboard representing all the squares that
+/// can be attacked by a pawn of the given color when it moves along its file,
+/// starting from the given square.
 #[inline]
 pub fn pawn_attack_span(c: Color, s: Square) -> Bitboard {
     unsafe { PAWN_ATTACK_SPAN[c.0 as usize][s.0 as usize] }
 }
 
-// passed_pawn_mask() returns a bitboard mask which can be used to test if a
-// pawn of the given color and on the given square is a passed pawn.
-
+/// passed_pawn_mask() returns a bitboard mask which can be used to test if a
+/// pawn of the given color and on the given square is a passed pawn.
 #[inline]
 pub fn passed_pawn_mask(c: Color, s: Square) -> Bitboard {
     unsafe { PASSED_PAWN_MASK[c.0 as usize][s.0 as usize] }
@@ -545,9 +555,8 @@ pub fn line_bb(s1: Square, s2: Square) -> Bitboard {
     unsafe { LINE_BB[s1.0 as usize][s2.0 as usize] }
 }
 
-// aligned() returns true if the squares s1, s2 and s3 are aligned either on
-// a straight or on a diagonal line.
-
+/// aligned() returns true if the squares s1, s2 and s3 are aligned either on
+/// a straight or on a diagonal line.
 #[inline]
 pub fn aligned(s1: Square, s2: Square, s3: Square) -> bool {
     line_bb(s1, s2) & s3 != 0
@@ -590,7 +599,7 @@ impl Distance for Square {
     }
 }
 
-// init() initializes various bitboard tables. It is called at startup.
+/// init() initializes various bitboard tables. It is called at startup.
 
 pub fn init() {
     for s in ALL_SQUARES {
@@ -780,8 +789,8 @@ fn init_magics(
     }
 }
 
-// attacks_bb() returns a bitboard representing all the squares attacked by
-// a piece of type Pt (bishop or rook) placed on 's'.
+/// attacks_bb() returns a bitboard representing all the squares attacked by
+/// a piece of type Pt (bishop or rook) placed on 's'.
 
 pub fn attacks_bb(pt: PieceType, s: Square, occupied: Bitboard) -> Bitboard {
     match pt {
