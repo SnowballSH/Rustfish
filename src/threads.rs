@@ -11,9 +11,9 @@ use ucioption;
 
 use std;
 use std::cell::Cell;
-use std::sync::{Arc, Condvar, Mutex, RwLock};
 use std::sync::atomic::*;
 use std::sync::mpsc::*;
+use std::sync::{Arc, Condvar, Mutex, RwLock};
 use std::thread;
 
 pub struct PosData {
@@ -62,7 +62,7 @@ impl ThreadCtrl {
                 root_moves: Arc::new(Vec::new()),
                 pos_data: Arc::new(RwLock::new(PosData {
                     fen: String::new(),
-                    moves: Vec::new()
+                    moves: Vec::new(),
                 })),
                 result: Arc::new(Mutex::new(SearchResult {
                     depth: Depth::ZERO,
@@ -79,7 +79,7 @@ impl ThreadCtrl {
 }
 
 // Remove next line when nodes and tb_hits can be made atomic u64
-unsafe impl Sync for ThreadCtrl { }
+unsafe impl Sync for ThreadCtrl {}
 
 type Handlers = Vec<thread::JoinHandle<()>>;
 type Threads = Vec<Arc<ThreadCtrl>>;
@@ -164,7 +164,8 @@ fn run_thread(idx: usize, tx: Sender<Arc<ThreadCtrl>>) {
     let mut pos = Box::new(Position::new());
     pos.pawns_table.reserve_exact(16384);
     for _ in 0..16384 {
-        pos.pawns_table.push(std::cell::UnsafeCell::new(pawns::Entry::new()));
+        pos.pawns_table
+            .push(std::cell::UnsafeCell::new(pawns::Entry::new()));
     }
     pos.material_table.reserve_exact(8192);
     for _ in 0..8192 {
@@ -236,8 +237,7 @@ fn run_thread(idx: usize, tx: Sender<Arc<ThreadCtrl>>) {
     }
 }
 
-fn wake_up(th: &ThreadCtrl, exit: bool, clear: bool)
-{
+fn wake_up(th: &ThreadCtrl, exit: bool, clear: bool) {
     let mut state = th.state.lock().unwrap();
     state.searching = true;
     state.exit = exit;
@@ -245,8 +245,7 @@ fn wake_up(th: &ThreadCtrl, exit: bool, clear: bool)
     th.cv.notify_one();
 }
 
-pub fn wake_up_slaves()
-{
+pub fn wake_up_slaves() {
     let threads: Box<Threads> = unsafe { Box::from_raw(THREADS) };
 
     for th in threads.iter() {
@@ -258,8 +257,7 @@ pub fn wake_up_slaves()
     std::mem::forget(threads);
 }
 
-pub fn clear_search()
-{
+pub fn clear_search() {
     let threads: Box<Threads> = unsafe { Box::from_raw(THREADS) };
 
     for th in threads.iter() {
@@ -269,8 +267,7 @@ pub fn clear_search()
     std::mem::forget(threads);
 }
 
-pub fn wait_for_main()
-{
+pub fn wait_for_main() {
     let threads: Box<Threads> = unsafe { Box::from_raw(THREADS) };
 
     for th in threads.iter() {
@@ -285,8 +282,7 @@ pub fn wait_for_main()
     std::mem::forget(threads);
 }
 
-pub fn wait_for_slaves()
-{
+pub fn wait_for_slaves() {
     let threads: Box<Threads> = unsafe { Box::from_raw(THREADS) };
 
     for th in threads.iter() {
@@ -301,8 +297,7 @@ pub fn wait_for_slaves()
     std::mem::forget(threads);
 }
 
-pub fn wait_for_all()
-{
+pub fn wait_for_all() {
     let threads: Box<Threads> = unsafe { Box::from_raw(THREADS) };
 
     for th in threads.iter() {
@@ -316,8 +311,11 @@ pub fn wait_for_all()
 }
 
 pub fn start_thinking(
-    pos: &mut Position, pos_data: &Arc<RwLock<PosData>>, limits: &LimitsType,
-    searchmoves: Vec<Move>, ponder_mode: bool
+    pos: &mut Position,
+    pos_data: &Arc<RwLock<PosData>>,
+    limits: &LimitsType,
+    searchmoves: Vec<Move>,
+    ponder_mode: bool,
 ) {
     let threads: Box<Threads> = unsafe { Box::from_raw(THREADS) };
 
@@ -333,9 +331,7 @@ pub fn start_thinking(
 
     let mut root_moves = RootMoves::new();
     for m in MoveList::new::<Legal>(pos) {
-        if searchmoves.is_empty()
-            || searchmoves.iter().any(|&x| x == m)
-        {
+        if searchmoves.is_empty() || searchmoves.iter().any(|&x| x == m) {
             root_moves.push(RootMove::new(m));
         }
     }

@@ -78,17 +78,23 @@ const DEFAULTS: [&str; 45] = [
 //                                    each
 // bench 16 1 5 default perft -> run a perft 5 on default positions
 
-
-pub fn setup_bench(pos: &Position, args: &str) -> Vec<String>
-{
+pub fn setup_bench(pos: &Position, args: &str) -> Vec<String> {
     let mut iter = args.split_whitespace();
 
     // Assign default values to missing arguments
-    let tt_size    = if let Some(t) = iter.next() { t } else { "16" };
-    let threads    = if let Some(t) = iter.next() { t } else { "1" };
-    let limit      = if let Some(t) = iter.next() { t } else { "13" };
-    let fen_file   = if let Some(t) = iter.next() { t } else { "default" };
-    let limit_type = if let Some(t) = iter.next() { t } else { "depth" };
+    let tt_size = if let Some(t) = iter.next() { t } else { "16" };
+    let threads = if let Some(t) = iter.next() { t } else { "1" };
+    let limit = if let Some(t) = iter.next() { t } else { "13" };
+    let fen_file = if let Some(t) = iter.next() {
+        t
+    } else {
+        "default"
+    };
+    let limit_type = if let Some(t) = iter.next() {
+        t
+    } else {
+        "depth"
+    };
 
     let go = format!("go {} {}", limit_type, limit);
 
@@ -105,7 +111,7 @@ pub fn setup_bench(pos: &Position, args: &str) -> Vec<String>
             Err(_) => {
                 eprintln!("Unable to open file {}", fen_file);
                 std::process::exit(-1);
-            },
+            }
             Ok(file) => file,
         };
         let reader = std::io::BufReader::new(file);

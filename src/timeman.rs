@@ -20,12 +20,14 @@ pub fn maximum() -> i64 {
 
 pub fn elapsed() -> i64 {
     let duration = unsafe { START_TIME.unwrap().elapsed() };
-    (duration.as_secs() * 1000 + (duration.subsec_nanos() / 1000000) as u64)
-        as i64
+    (duration.as_secs() * 1000 + (duration.subsec_nanos() / 1000000) as u64) as i64
 }
 
 #[derive(PartialEq, Eq)]
-enum TimeType { OptimumTime, MaxTime }
+enum TimeType {
+    OptimumTime,
+    MaxTime,
+}
 use self::TimeType::*;
 
 // Plan time management at most this many moves ahread
@@ -44,18 +46,22 @@ const STEAL_RATIO: f64 = 0.34;
 fn importance(ply: i32) -> f64 {
     const XSCALE: f64 = 6.85;
     const XSHIFT: f64 = 64.5;
-    const SKEW:   f64 = 0.171;
+    const SKEW: f64 = 0.171;
 
-    (1. + ((ply as f64 - XSHIFT) / XSCALE).exp()).powf(-SKEW)
-    + std::f64::MIN_POSITIVE
+    (1. + ((ply as f64 - XSHIFT) / XSCALE).exp()).powf(-SKEW) + std::f64::MIN_POSITIVE
 }
 
-fn remaining(
-    my_time: i64, movestogo: i32, ply: i32, slow_mover: i64,
-    time_type: TimeType
-) -> i64 {
-    let max_ratio = if time_type == OptimumTime { 1. } else { MAX_RATIO };
-    let steal_ratio = if time_type == OptimumTime { 0. } else { STEAL_RATIO };
+fn remaining(my_time: i64, movestogo: i32, ply: i32, slow_mover: i64, time_type: TimeType) -> i64 {
+    let max_ratio = if time_type == OptimumTime {
+        1.
+    } else {
+        MAX_RATIO
+    };
+    let steal_ratio = if time_type == OptimumTime {
+        0.
+    } else {
+        STEAL_RATIO
+    };
 
     let move_importance = (importance(ply) * slow_mover as f64) / 100.;
     let mut other_moves_importance = 0.;
@@ -64,10 +70,10 @@ fn remaining(
         other_moves_importance += importance(ply + 2 * i);
     }
 
-    let ratio1 = (max_ratio * move_importance) /
-        (max_ratio * move_importance + other_moves_importance);
-    let ratio2 = (move_importance + steal_ratio * other_moves_importance) /
-        (move_importance + other_moves_importance);
+    let ratio1 =
+        (max_ratio * move_importance) / (max_ratio * move_importance + other_moves_importance);
+    let ratio2 = (move_importance + steal_ratio * other_moves_importance)
+        / (move_importance + other_moves_importance);
 
     (my_time as f64 * ratio1.min(ratio2)) as i64
 }
@@ -81,11 +87,10 @@ fn remaining(
 //  inc >  0 && movestogo == 0 means: x basetime + z increment
 //  inc >  0 && movestogo != 0 means: x moves in y minutes + z increment
 
-pub fn init(limits: &mut search::LimitsType, us: Color, ply: i32)
-{
+pub fn init(limits: &mut search::LimitsType, us: Color, ply: i32) {
     let min_think_time = ucioption::get_i32("Minimum Thinking Time") as i64;
-    let move_overhead  = ucioption::get_i32("Move Overhead") as i64;
-    let slow_mover     = ucioption::get_i32("Slow Mover") as i64;
+    let move_overhead = ucioption::get_i32("Move Overhead") as i64;
+    let slow_mover = ucioption::get_i32("Slow Mover") as i64;
 
     unsafe {
         START_TIME = limits.start_time;
@@ -94,10 +99,11 @@ pub fn init(limits: &mut search::LimitsType, us: Color, ply: i32)
         MAXIMUM_TIME = time;
     }
 
-    let max_mtg = if limits.movestogo != 0
-        { std::cmp::min(limits.movestogo, MOVE_HORIZON) }
-    else
-        { MOVE_HORIZON };
+    let max_mtg = if limits.movestogo != 0 {
+        std::cmp::min(limits.movestogo, MOVE_HORIZON)
+    } else {
+        MOVE_HORIZON
+    };
 
     // We calculate optimum time usage for different hypothetical "moves to go"
     // values and choose the minimum of calculated search time values. Usually
@@ -110,10 +116,8 @@ pub fn init(limits: &mut search::LimitsType, us: Color, ply: i32)
 
         hyp_my_time = std::cmp::max(hyp_my_time, 0);
 
-        let t1 = min_think_time
-            + remaining(hyp_my_time, hyp_mtg, ply, slow_mover, OptimumTime);
-        let t2 = min_think_time
-            + remaining(hyp_my_time, hyp_mtg, ply, slow_mover, MaxTime);
+        let t1 = min_think_time + remaining(hyp_my_time, hyp_mtg, ply, slow_mover, OptimumTime);
+        let t2 = min_think_time + remaining(hyp_my_time, hyp_mtg, ply, slow_mover, MaxTime);
 
         unsafe {
             OPTIMUM_TIME = std::cmp::min(t1, OPTIMUM_TIME);

@@ -2,8 +2,8 @@
 
 use bitboard::*;
 use movegen::*;
-use position::Position;
 use position::zobrist::material;
+use position::Position;
 use search::RootMoves;
 use types::*;
 use ucioption;
@@ -15,8 +15,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::slice;
-use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 
 const TB_PIECES: usize = 7;
 
@@ -88,7 +88,7 @@ impl EncInfo {
 }
 
 const WDL_TO_MAP: [u32; 5] = [1, 3, 0, 2, 0];
-const PA_FLAGS: [u8; 5] = [ 8, 0, 0, 0, 4 ];
+const PA_FLAGS: [u8; 5] = [8, 0, 0, 0, 4];
 
 const WDL_MAGIC: u32 = 0x5d23e871;
 const DTM_MAGIC: u32 = 0x88ac504b;
@@ -140,8 +140,12 @@ impl TbType for Wdl {
     type PawnTable = WdlPawn;
     type Select = ();
     const TYPE: i32 = 0;
-    fn magic() -> u32 { WDL_MAGIC }
-    fn suffix() -> &'static str { WDL_SUFFIX }
+    fn magic() -> u32 {
+        WDL_MAGIC
+    }
+    fn suffix() -> &'static str {
+        WDL_SUFFIX
+    }
 }
 
 impl TbType for Dtm {
@@ -149,8 +153,12 @@ impl TbType for Dtm {
     type PawnTable = DtmPawn;
     type Select = bool;
     const TYPE: i32 = 1;
-    fn magic() -> u32 { DTM_MAGIC }
-    fn suffix() -> &'static str { DTM_SUFFIX }
+    fn magic() -> u32 {
+        DTM_MAGIC
+    }
+    fn suffix() -> &'static str {
+        DTM_SUFFIX
+    }
 }
 
 impl TbType for Dtz {
@@ -158,8 +166,12 @@ impl TbType for Dtz {
     type PawnTable = DtzPawn;
     type Select = i32;
     const TYPE: i32 = 2;
-    fn magic() -> u32 { DTZ_MAGIC }
-    fn suffix() -> &'static str { DTZ_SUFFIX }
+    fn magic() -> u32 {
+        DTZ_MAGIC
+    }
+    fn suffix() -> &'static str {
+        DTZ_SUFFIX
+    }
 }
 
 trait TbTable: Sized {
@@ -178,8 +190,7 @@ trait TbTable: Sized {
     fn set_map_idx(&mut self, t: usize, i: usize, j: usize, v: u16);
     type MapType: 'static;
     fn set_map(&mut self, map: &'static [Self::MapType]);
-    fn map(&self, t: usize, bside: usize, res: i32,
-        s: <Self::Type as TbType>::Select) -> i32;
+    fn map(&self, t: usize, bside: usize, res: i32, s: <Self::Type as TbType>::Select) -> i32;
     fn set_switched(&mut self);
     fn switched(&self) -> bool;
 }
@@ -194,23 +205,39 @@ impl TbTable for WdlPiece {
     type Type = Wdl;
     type Entry = PieceEntry;
     type Enc = PieceEnc;
-    fn mapping(&mut self) -> &mut Option<Box<Mmap>> { &mut self.mapping }
-    fn ready(&self) -> &AtomicBool { &self.ready }
-    fn num_tables() -> usize { 1 }
-    fn ei(&self, _t: usize, i: usize) -> &EncInfo { &self.ei[i] }
+    fn mapping(&mut self) -> &mut Option<Box<Mmap>> {
+        &mut self.mapping
+    }
+    fn ready(&self) -> &AtomicBool {
+        &self.ready
+    }
+    fn num_tables() -> usize {
+        1
+    }
+    fn ei(&self, _t: usize, i: usize) -> &EncInfo {
+        &self.ei[i]
+    }
     fn ei_mut(&mut self, _t: usize, i: usize) -> &mut EncInfo {
         &mut self.ei[i]
     }
     fn set_loss_only(&mut self, _b: bool) {}
-    fn loss_only(&self) -> bool { false }
+    fn loss_only(&self) -> bool {
+        false
+    }
     fn set_flags(&mut self, _t: usize, _f: u8) {}
-    fn flags(&self, _t: usize) -> u8 { 0 }
+    fn flags(&self, _t: usize) -> u8 {
+        0
+    }
     fn set_map_idx(&mut self, _t: usize, _i: usize, _j: usize, _v: u16) {}
     type MapType = ();
     fn set_map(&mut self, _map: &'static [Self::MapType]) {}
-    fn map(&self, _t: usize, _b: usize, res: i32, _s: ()) -> i32 { res - 2 }
+    fn map(&self, _t: usize, _b: usize, res: i32, _s: ()) -> i32 {
+        res - 2
+    }
     fn set_switched(&mut self) {}
-    fn switched(&self) -> bool { false }
+    fn switched(&self) -> bool {
+        false
+    }
 }
 
 struct DtmPiece {
@@ -226,22 +253,38 @@ impl TbTable for DtmPiece {
     type Type = Dtm;
     type Entry = PieceEntry;
     type Enc = PieceEnc;
-    fn mapping(&mut self) -> &mut Option<Box<Mmap>> { &mut self.mapping }
-    fn ready(&self) -> &AtomicBool { &self.ready }
-    fn num_tables() -> usize { 1 }
-    fn ei(&self, _t: usize, i: usize) -> &EncInfo { &self.ei[i] }
+    fn mapping(&mut self) -> &mut Option<Box<Mmap>> {
+        &mut self.mapping
+    }
+    fn ready(&self) -> &AtomicBool {
+        &self.ready
+    }
+    fn num_tables() -> usize {
+        1
+    }
+    fn ei(&self, _t: usize, i: usize) -> &EncInfo {
+        &self.ei[i]
+    }
     fn ei_mut(&mut self, _t: usize, i: usize) -> &mut EncInfo {
         &mut self.ei[i]
     }
-    fn set_loss_only(&mut self, b: bool) { self.loss_only = b; }
-    fn loss_only(&self) -> bool { self.loss_only }
+    fn set_loss_only(&mut self, b: bool) {
+        self.loss_only = b;
+    }
+    fn loss_only(&self) -> bool {
+        self.loss_only
+    }
     fn set_flags(&mut self, _t: usize, _f: u8) {}
-    fn flags(&self, _t: usize) -> u8 { 0 }
+    fn flags(&self, _t: usize) -> u8 {
+        0
+    }
     fn set_map_idx(&mut self, _t: usize, i: usize, j: usize, v: u16) {
         self.map_idx[i][j] = v;
     }
     type MapType = u16;
-    fn set_map(&mut self, map: &'static [Self::MapType]) { self.map = map }
+    fn set_map(&mut self, map: &'static [Self::MapType]) {
+        self.map = map
+    }
     fn map(&self, _t: usize, bside: usize, mut res: i32, won: bool) -> i32 {
         if !self.loss_only {
             let idx = self.map_idx[bside][won as usize];
@@ -250,7 +293,9 @@ impl TbTable for DtmPiece {
         res
     }
     fn set_switched(&mut self) {}
-    fn switched(&self) -> bool { false }
+    fn switched(&self) -> bool {
+        false
+    }
 }
 
 struct DtzPiece {
@@ -266,20 +311,38 @@ impl TbTable for DtzPiece {
     type Type = Dtz;
     type Entry = PieceEntry;
     type Enc = PieceEnc;
-    fn mapping(&mut self) -> &mut Option<Box<Mmap>> { &mut self.mapping }
-    fn ready(&self) -> &AtomicBool { &self.ready }
-    fn num_tables() -> usize { 1 }
-    fn ei(&self, _t: usize, _i: usize) -> &EncInfo { &self.ei }
-    fn ei_mut(&mut self, _t: usize, _i: usize) -> &mut EncInfo { &mut self.ei }
+    fn mapping(&mut self) -> &mut Option<Box<Mmap>> {
+        &mut self.mapping
+    }
+    fn ready(&self) -> &AtomicBool {
+        &self.ready
+    }
+    fn num_tables() -> usize {
+        1
+    }
+    fn ei(&self, _t: usize, _i: usize) -> &EncInfo {
+        &self.ei
+    }
+    fn ei_mut(&mut self, _t: usize, _i: usize) -> &mut EncInfo {
+        &mut self.ei
+    }
     fn set_loss_only(&mut self, _b: bool) {}
-    fn loss_only(&self) -> bool { false }
-    fn set_flags(&mut self, _t: usize, f: u8) { self.flags = f; }
-    fn flags(&self, _t: usize) -> u8 { self.flags }
+    fn loss_only(&self) -> bool {
+        false
+    }
+    fn set_flags(&mut self, _t: usize, f: u8) {
+        self.flags = f;
+    }
+    fn flags(&self, _t: usize) -> u8 {
+        self.flags
+    }
     fn set_map_idx(&mut self, _t: usize, _i: usize, j: usize, v: u16) {
         self.map_idx[j] = v;
     }
     type MapType = u8;
-    fn set_map(&mut self, map: &'static [Self::MapType]) { self.map = map }
+    fn set_map(&mut self, map: &'static [Self::MapType]) {
+        self.map = map
+    }
     fn map(&self, _t: usize, _b: usize, mut res: i32, wdl: i32) -> i32 {
         if self.flags & 2 != 0 {
             let idx = self.map_idx[WDL_TO_MAP[(wdl + 2) as usize] as usize];
@@ -291,7 +354,9 @@ impl TbTable for DtzPiece {
         res
     }
     fn set_switched(&mut self) {}
-    fn switched(&self) -> bool { false }
+    fn switched(&self) -> bool {
+        false
+    }
 }
 
 trait TbEntry<T: TbTable> {
@@ -322,35 +387,52 @@ struct PieceEntry {
     has_dtz: bool,
 }
 
-impl<T> TbEntry<T> for PieceEntry where T: TbTable {
+impl<T> TbEntry<T> for PieceEntry
+where
+    T: TbTable,
+{
     fn table_mut(&self) -> &mut T {
         match T::Type::TYPE {
             Wdl::TYPE => unsafe { &mut *(self.wdl.get() as *mut T) },
             Dtm::TYPE => unsafe { &mut *(self.dtm.get() as *mut T) },
             Dtz::TYPE => unsafe { &mut *(self.dtz.get() as *mut T) },
-            _   => panic!("Non-existing table type"),
+            _ => panic!("Non-existing table type"),
         }
     }
 
-    fn table(&self) -> &T { self.table_mut() }
+    fn table(&self) -> &T {
+        self.table_mut()
+    }
 
     fn exists(&self) -> bool {
         match T::Type::TYPE {
             Wdl::TYPE => true,
             Dtm::TYPE => self.has_dtm,
             Dtz::TYPE => self.has_dtz,
-            _   => panic!("Non-existing table type"),
+            _ => panic!("Non-existing table type"),
         }
     }
 }
 
 impl EntryInfo for PieceEntry {
-    fn key(&self) -> Key { self.key }
-    fn lock(&self) -> &Mutex<()> { &self.lock }
-    fn num(&self) -> u8 { self.num }
-    fn symmetric(&self) -> bool { self.symmetric }
-    fn kk_enc(&self) -> bool { self.kk_enc }
-    fn pawns(&self, _i: usize) -> u8 { 0 }
+    fn key(&self) -> Key {
+        self.key
+    }
+    fn lock(&self) -> &Mutex<()> {
+        &self.lock
+    }
+    fn num(&self) -> u8 {
+        self.num
+    }
+    fn symmetric(&self) -> bool {
+        self.symmetric
+    }
+    fn kk_enc(&self) -> bool {
+        self.kk_enc
+    }
+    fn pawns(&self, _i: usize) -> u8 {
+        0
+    }
 }
 
 struct WdlPawn {
@@ -363,23 +445,39 @@ impl TbTable for WdlPawn {
     type Type = Wdl;
     type Entry = PawnEntry;
     type Enc = FileEnc;
-    fn mapping(&mut self) -> &mut Option<Box<Mmap>> { &mut self.mapping }
-    fn ready(&self) -> &AtomicBool { &self.ready }
-    fn num_tables() -> usize { 4 }
-    fn ei(&self, t: usize, i: usize) -> &EncInfo { &self.ei[t][i] }
+    fn mapping(&mut self) -> &mut Option<Box<Mmap>> {
+        &mut self.mapping
+    }
+    fn ready(&self) -> &AtomicBool {
+        &self.ready
+    }
+    fn num_tables() -> usize {
+        4
+    }
+    fn ei(&self, t: usize, i: usize) -> &EncInfo {
+        &self.ei[t][i]
+    }
     fn ei_mut(&mut self, t: usize, i: usize) -> &mut EncInfo {
         &mut self.ei[t][i]
     }
     fn set_loss_only(&mut self, _b: bool) {}
-    fn loss_only(&self) -> bool { false }
+    fn loss_only(&self) -> bool {
+        false
+    }
     fn set_flags(&mut self, _t: usize, _f: u8) {}
-    fn flags(&self, _t: usize) -> u8 { 0 }
+    fn flags(&self, _t: usize) -> u8 {
+        0
+    }
     fn set_map_idx(&mut self, _t: usize, _i: usize, _j: usize, _v: u16) {}
     type MapType = ();
     fn set_map(&mut self, _map: &'static [Self::MapType]) {}
-    fn map(&self, _t: usize, _b: usize, res: i32, _s: ()) -> i32 { res - 2 }
+    fn map(&self, _t: usize, _b: usize, res: i32, _s: ()) -> i32 {
+        res - 2
+    }
     fn set_switched(&mut self) {}
-    fn switched(&self) -> bool { false }
+    fn switched(&self) -> bool {
+        false
+    }
 }
 
 struct DtmPawn {
@@ -396,22 +494,38 @@ impl TbTable for DtmPawn {
     type Type = Dtm;
     type Entry = PawnEntry;
     type Enc = RankEnc;
-    fn mapping(&mut self) -> &mut Option<Box<Mmap>> { &mut self.mapping }
-    fn ready(&self) -> &AtomicBool { &self.ready }
-    fn num_tables() -> usize { 6 }
-    fn ei(&self, t: usize, i: usize) -> &EncInfo { &self.ei[t][i] }
+    fn mapping(&mut self) -> &mut Option<Box<Mmap>> {
+        &mut self.mapping
+    }
+    fn ready(&self) -> &AtomicBool {
+        &self.ready
+    }
+    fn num_tables() -> usize {
+        6
+    }
+    fn ei(&self, t: usize, i: usize) -> &EncInfo {
+        &self.ei[t][i]
+    }
     fn ei_mut(&mut self, t: usize, i: usize) -> &mut EncInfo {
         &mut self.ei[t][i]
     }
-    fn set_loss_only(&mut self, b: bool) { self.loss_only = b; }
-    fn loss_only(&self) -> bool { self.loss_only }
+    fn set_loss_only(&mut self, b: bool) {
+        self.loss_only = b;
+    }
+    fn loss_only(&self) -> bool {
+        self.loss_only
+    }
     fn set_flags(&mut self, _t: usize, _f: u8) {}
-    fn flags(&self, _t: usize) -> u8 { 0 }
+    fn flags(&self, _t: usize) -> u8 {
+        0
+    }
     fn set_map_idx(&mut self, t: usize, i: usize, j: usize, v: u16) {
         self.map_idx[t][i][j] = v;
     }
     type MapType = u16;
-    fn set_map(&mut self, map: &'static [Self::MapType]) { self.map = map }
+    fn set_map(&mut self, map: &'static [Self::MapType]) {
+        self.map = map
+    }
     fn map(&self, t: usize, bside: usize, mut res: i32, won: bool) -> i32 {
         if !self.loss_only {
             let idx = self.map_idx[t][bside][won as usize];
@@ -419,8 +533,12 @@ impl TbTable for DtmPawn {
         }
         res
     }
-    fn set_switched(&mut self) { self.switched = true; }
-    fn switched(&self) -> bool { self.switched }
+    fn set_switched(&mut self) {
+        self.switched = true;
+    }
+    fn switched(&self) -> bool {
+        self.switched
+    }
 }
 
 struct DtzPawn {
@@ -436,22 +554,38 @@ impl TbTable for DtzPawn {
     type Type = Dtz;
     type Entry = PawnEntry;
     type Enc = FileEnc;
-    fn ready(&self) -> &AtomicBool { &self.ready }
-    fn mapping(&mut self) -> &mut Option<Box<Mmap>> { &mut self.mapping }
-    fn num_tables() -> usize { 4 }
-    fn ei(&self, t: usize, _i: usize) -> &EncInfo { &self.ei[t] }
+    fn ready(&self) -> &AtomicBool {
+        &self.ready
+    }
+    fn mapping(&mut self) -> &mut Option<Box<Mmap>> {
+        &mut self.mapping
+    }
+    fn num_tables() -> usize {
+        4
+    }
+    fn ei(&self, t: usize, _i: usize) -> &EncInfo {
+        &self.ei[t]
+    }
     fn ei_mut(&mut self, t: usize, _i: usize) -> &mut EncInfo {
         &mut self.ei[t]
     }
     fn set_loss_only(&mut self, _b: bool) {}
-    fn loss_only(&self) -> bool { false }
-    fn set_flags(&mut self, t: usize, f: u8) { self.flags[t] = f; }
-    fn flags(&self, t: usize) -> u8 { self.flags[t] }
+    fn loss_only(&self) -> bool {
+        false
+    }
+    fn set_flags(&mut self, t: usize, f: u8) {
+        self.flags[t] = f;
+    }
+    fn flags(&self, t: usize) -> u8 {
+        self.flags[t]
+    }
     fn set_map_idx(&mut self, t: usize, _i: usize, j: usize, v: u16) {
         self.map_idx[t][j] = v;
     }
     type MapType = u8;
-    fn set_map(&mut self, map: &'static [Self::MapType]) { self.map = map }
+    fn set_map(&mut self, map: &'static [Self::MapType]) {
+        self.map = map
+    }
     fn map(&self, t: usize, _b: usize, mut res: i32, wdl: i32) -> i32 {
         if self.flags[t] & 2 != 0 {
             let idx = self.map_idx[t][WDL_TO_MAP[(wdl + 2) as usize] as usize];
@@ -463,7 +597,9 @@ impl TbTable for DtzPawn {
         res
     }
     fn set_switched(&mut self) {}
-    fn switched(&self) -> bool { false }
+    fn switched(&self) -> bool {
+        false
+    }
 }
 
 struct PawnEntry {
@@ -479,35 +615,52 @@ struct PawnEntry {
     has_dtz: bool,
 }
 
-impl<T> TbEntry<T> for PawnEntry where T: TbTable {
+impl<T> TbEntry<T> for PawnEntry
+where
+    T: TbTable,
+{
     fn table_mut(&self) -> &mut T {
         match T::Type::TYPE {
             Wdl::TYPE => unsafe { &mut *(self.wdl.get() as *mut T) },
             Dtm::TYPE => unsafe { &mut *(self.dtm.get() as *mut T) },
             Dtz::TYPE => unsafe { &mut *(self.dtz.get() as *mut T) },
-            _   => panic!("Non-existing table type"),
+            _ => panic!("Non-existing table type"),
         }
     }
 
-    fn table(&self) -> &T { self.table_mut() }
+    fn table(&self) -> &T {
+        self.table_mut()
+    }
 
     fn exists(&self) -> bool {
         match T::Type::TYPE {
             Wdl::TYPE => true,
             Dtm::TYPE => self.has_dtm,
             Dtz::TYPE => self.has_dtz,
-            _   => panic!("Non-existing table type"),
+            _ => panic!("Non-existing table type"),
         }
     }
 }
 
 impl EntryInfo for PawnEntry {
-    fn key(&self) -> Key { self.key }
-    fn lock(&self) -> &Mutex<()> { &self.lock }
-    fn num(&self) -> u8 { self.num }
-    fn symmetric(&self) -> bool { self.symmetric }
-    fn kk_enc(&self) -> bool { false }
-    fn pawns(&self, i: usize) -> u8 { self.pawns[i] }
+    fn key(&self) -> Key {
+        self.key
+    }
+    fn lock(&self) -> &Mutex<()> {
+        &self.lock
+    }
+    fn num(&self) -> u8 {
+        self.num
+    }
+    fn symmetric(&self) -> bool {
+        self.symmetric
+    }
+    fn kk_enc(&self) -> bool {
+        false
+    }
+    fn pawns(&self, i: usize) -> u8 {
+        self.pawns[i]
+    }
 }
 
 #[derive(Clone)]
@@ -572,7 +725,11 @@ fn calc_key_from_pieces(pieces: &[u8]) -> Key {
 static mut PATH: Option<String> = None;
 
 fn sep_char() -> char {
-    if cfg!(target_os = "windows") { ';' } else { ':' }
+    if cfg!(target_os = "windows") {
+        ';'
+    } else {
+        ':'
+    }
 }
 
 fn test_tb(name: &str, suffix: &str) -> bool {
@@ -608,9 +765,7 @@ fn map_file(name: &str, suffix: &str) -> Option<Box<Mmap>> {
 
     let file = file.unwrap();
     match unsafe { MmapOptions::new().map(&file) } {
-        Ok(mmap) => {
-            Some(Box::new(mmap))
-        }
+        Ok(mmap) => Some(Box::new(mmap)),
         Err(err) => {
             eprintln!("{:?}", err.kind());
             None
@@ -661,7 +816,10 @@ impl<T> GlobalVec<T> {
     }
 }
 
-impl<T> std::ops::Index<usize> for GlobalVec<T> where T: 'static {
+impl<T> std::ops::Index<usize> for GlobalVec<T>
+where
+    T: 'static,
+{
     type Output = T;
 
     fn index(&self, idx: usize) -> &'static T {
@@ -672,14 +830,19 @@ impl<T> std::ops::Index<usize> for GlobalVec<T> where T: 'static {
     }
 }
 
-static mut PIECE_ENTRIES: GlobalVec<PieceEntry> =
-    GlobalVec { v: 0 as *mut PieceEntry, len: 0, cap: 0 };
+static mut PIECE_ENTRIES: GlobalVec<PieceEntry> = GlobalVec {
+    v: 0 as *mut PieceEntry,
+    len: 0,
+    cap: 0,
+};
 
-static mut PAWN_ENTRIES: GlobalVec<PawnEntry> =
-    GlobalVec { v: 0 as *mut PawnEntry, len: 0, cap: 0 };
+static mut PAWN_ENTRIES: GlobalVec<PawnEntry> = GlobalVec {
+    v: 0 as *mut PawnEntry,
+    len: 0,
+    cap: 0,
+};
 
-static mut TB_MAP: *mut HashMap<Key, TbHashEntry> =
-    0 as *mut HashMap<Key, TbHashEntry>;
+static mut TB_MAP: *mut HashMap<Key, TbHashEntry> = 0 as *mut HashMap<Key, TbHashEntry>;
 
 static mut NUM_WDL: u32 = 0;
 static mut NUM_DTM: u32 = 0;
@@ -697,12 +860,12 @@ pub fn init_tb(name: &str) {
     let mut color = 0;
     for c in name.chars() {
         match c {
-            'P' => pcs[PAWN.0 as usize   | color] += 1,
+            'P' => pcs[PAWN.0 as usize | color] += 1,
             'N' => pcs[KNIGHT.0 as usize | color] += 1,
             'B' => pcs[BISHOP.0 as usize | color] += 1,
-            'R' => pcs[ROOK.0 as usize   | color] += 1,
-            'Q' => pcs[QUEEN.0 as usize  | color] += 1,
-            'K' => pcs[KING.0 as usize   | color] += 1,
+            'R' => pcs[ROOK.0 as usize | color] += 1,
+            'Q' => pcs[QUEEN.0 as usize | color] += 1,
+            'K' => pcs[KING.0 as usize | color] += 1,
             'v' => color = 8,
             _ => {}
         }
@@ -757,7 +920,9 @@ pub fn init_tb(name: &str) {
                 map_idx: [0; 4],
             }),
         };
-        unsafe { PIECE_ENTRIES.push(entry); }
+        unsafe {
+            PIECE_ENTRIES.push(entry);
+        }
         tb_entry = TbHashEntry::Piece(unsafe { PIECE_ENTRIES.len() - 1 });
     } else {
         let mut p0 = pcs[W_PAWN.0 as usize];
@@ -804,14 +969,18 @@ pub fn init_tb(name: &str) {
                 ready: AtomicBool::new(false),
                 flags: [0; 4],
                 ei: [
-                    EncInfo::new(), EncInfo::new(),
-                    EncInfo::new(), EncInfo::new()
+                    EncInfo::new(),
+                    EncInfo::new(),
+                    EncInfo::new(),
+                    EncInfo::new(),
                 ],
                 map: &[],
                 map_idx: [[0; 4]; 4],
             }),
         };
-        unsafe { PAWN_ENTRIES.push(entry); }
+        unsafe {
+            PAWN_ENTRIES.push(entry);
+        }
         tb_entry = TbHashEntry::Pawn(unsafe { PAWN_ENTRIES.len() - 1 });
     }
 
@@ -837,7 +1006,7 @@ pub fn free() {
 }
 
 pub fn init(path: String) {
-    const P: [char; 5] = [ 'Q', 'R', 'B', 'N', 'P' ];
+    const P: [char; 5] = ['Q', 'R', 'B', 'N', 'P'];
     static mut INITIALIZED: bool = false;
 
     // Restrict engine to 5-piece TBs on platforms with 32-bit address space
@@ -907,13 +1076,11 @@ pub fn init(path: String) {
     }
 
     if !max5 {
-
         for i in 0..5 {
             for j in i..5 {
                 for k in i..5 {
                     for l in (if i == k { j } else { k })..5 {
-                        init_tb(&format!("K{}{}vK{}{}",
-                            P[i], P[j], P[k], P[l]));
+                        init_tb(&format!("K{}{}vK{}{}", P[i], P[j], P[k], P[l]));
                     }
                 }
             }
@@ -923,8 +1090,7 @@ pub fn init(path: String) {
             for j in i..5 {
                 for k in j..5 {
                     for l in 0..5 {
-                        init_tb(&format!("K{}{}{}vK{}",
-                            P[i], P[j], P[k], P[l]));
+                        init_tb(&format!("K{}{}{}vK{}", P[i], P[j], P[k], P[l]));
                     }
                 }
             }
@@ -934,8 +1100,7 @@ pub fn init(path: String) {
             for j in i..5 {
                 for k in j..5 {
                     for l in k..5 {
-                        init_tb(&format!("K{}{}{}{}vK",
-                            P[i], P[j], P[k], P[l]));
+                        init_tb(&format!("K{}{}{}{}vK", P[i], P[j], P[k], P[l]));
                     }
                 }
             }
@@ -946,8 +1111,7 @@ pub fn init(path: String) {
                 for k in j..5 {
                     for l in 0..5 {
                         for m in l..5 {
-                            init_tb(&format!("K{}{}{}vK{}{}",
-                                P[i], P[j], P[k], P[l], P[m]));
+                            init_tb(&format!("K{}{}{}vK{}{}", P[i], P[j], P[k], P[l], P[m]));
                         }
                     }
                 }
@@ -959,8 +1123,7 @@ pub fn init(path: String) {
                 for k in j..5 {
                     for l in k..5 {
                         for m in 0..5 {
-                            init_tb(&format!("K{}{}{}{}vK{}",
-                                P[i], P[j], P[k], P[l], P[m]));
+                            init_tb(&format!("K{}{}{}{}vK{}", P[i], P[j], P[k], P[l], P[m]));
                         }
                     }
                 }
@@ -972,18 +1135,20 @@ pub fn init(path: String) {
                 for k in j..5 {
                     for l in k..5 {
                         for m in l..5 {
-                            init_tb(&format!("K{}{}{}{}{}vK",
-                                P[i], P[j], P[k], P[l], P[m]));
+                            init_tb(&format!("K{}{}{}{}{}vK", P[i], P[j], P[k], P[l], P[m]));
                         }
                     }
                 }
             }
         }
-
     }
 
-    println!("info string Found {} WDL, {} DTM and {} DTZ tablebase files.",
-        unsafe { NUM_WDL }, unsafe { NUM_DTM }, unsafe { NUM_DTZ });
+    println!(
+        "info string Found {} WDL, {} DTM and {} DTZ tablebase files.",
+        unsafe { NUM_WDL },
+        unsafe { NUM_DTM },
+        unsafe { NUM_DTZ }
+    );
 }
 
 // place k like pieces on n squares
@@ -999,7 +1164,11 @@ fn subfactor(k: usize, n: usize) -> usize {
 }
 
 fn calc_factors<T: Encoding>(
-    ei: &mut EncInfo, e: &T::Entry, order: u8, order2: u8, t: usize
+    ei: &mut EncInfo,
+    e: &T::Entry,
+    order: u8,
+    order2: u8,
+    t: usize,
 ) -> usize {
     let mut i = ei.norm[0];
     if order2 < 0x0f {
@@ -1012,14 +1181,20 @@ fn calc_factors<T: Encoding>(
         if k == order {
             ei.factor[0] = f;
             f *= if T::ENC == PieceEnc::ENC {
-                if e.kk_enc() { 462 } else { 31332 }
+                if e.kk_enc() {
+                    462
+                } else {
+                    31332
+                }
             } else {
                 pfactor::<T>(ei.norm[0] as usize - 1, t)
             };
         } else if k == order2 {
             ei.factor[ei.norm[0] as usize] = f;
-            f *= subfactor(ei.norm[ei.norm[0] as usize] as usize,
-                48 - ei.norm[0] as usize);
+            f *= subfactor(
+                ei.norm[ei.norm[0] as usize] as usize,
+                48 - ei.norm[0] as usize,
+            );
         } else {
             ei.factor[i as usize] = f;
             f *= subfactor(ei.norm[i as usize] as usize, n as usize);
@@ -1056,17 +1231,18 @@ fn set_norm<T: Encoding>(ei: &mut EncInfo, e: &T::Entry) {
     }
 }
 
-fn setup_pieces<T: Encoding>(
-    ei: &mut EncInfo, e: &T::Entry, tb: &[u8], s: u32, t: usize
-) -> usize {
+fn setup_pieces<T: Encoding>(ei: &mut EncInfo, e: &T::Entry, tb: &[u8], s: u32, t: usize) -> usize {
     let j = 1 + (e.pawns(1) > 0) as usize;
 
     for i in 0..(e.num() as usize) {
         ei.pieces[i] = (tb[i + j] >> s) & 0x0f;
     }
     let order = (tb[0] >> s) & 0x0f;
-    let order2 =
-        if e.pawns(1) > 0 { (tb[1] >> s) & 0x0f } else { 0x0f };
+    let order2 = if e.pawns(1) > 0 {
+        (tb[1] >> s) & 0x0f
+    } else {
+        0x0f
+    };
 
     set_norm::<T>(ei, e);
     calc_factors::<T>(ei, e, order, order2, t)
@@ -1100,9 +1276,7 @@ fn s2(w: &[u8; 3]) -> usize {
     ((w[2] as usize) << 4) | ((w[1] as usize) >> 4)
 }
 
-fn calc_sym_len(
-    sym_len: &mut Vec<u8>, sym_pat: &[[u8; 3]], s: usize, tmp: &mut Vec<u8>
-) {
+fn calc_sym_len(sym_len: &mut Vec<u8>, sym_pat: &[[u8; 3]], s: usize, tmp: &mut Vec<u8>) {
     if tmp[s] != 0 {
         return;
     }
@@ -1121,8 +1295,11 @@ fn calc_sym_len(
 }
 
 fn setup_pairs(
-    data_ref: &mut &'static [u8], tb_size: usize, size: &mut [usize],
-    flags: &mut u8, is_wdl: bool
+    data_ref: &mut &'static [u8],
+    tb_size: usize,
+    size: &mut [usize],
+    flags: &mut u8,
+    is_wdl: bool,
 ) -> Box<PairsData> {
     let data = *data_ref;
     *flags = data[0];
@@ -1177,7 +1354,7 @@ fn setup_pairs(
     for _ in 0..h {
         base.push(0u64);
     }
-    for i in (0..h-1).rev() {
+    for i in (0..h - 1).rev() {
         let b1 = u16::from_le(offset[i]) as u64;
         let b2 = u16::from_le(offset[i + 1]) as u64;
         base[i] = (base[i + 1] + b1 - b2) / 2;
@@ -1210,17 +1387,13 @@ fn align_slice(data: &[u8], align: usize) -> &[u8] {
 fn slice<'a, T>(data: &mut &'a [u8], size: usize) -> &'a [T] {
     let ptr = data.as_ptr();
     *data = &data[size * std::mem::size_of::<T>()..];
-    unsafe {
-        slice::from_raw_parts(ptr as *const T, size)
-    }
+    unsafe { slice::from_raw_parts(ptr as *const T, size) }
 }
 
 fn cast_slice<T>(data: &[u8], size: usize) -> &[T] {
     assert!(data.len() >= size * std::mem::size_of::<T>());
 
-    unsafe {
-        slice::from_raw_parts(data.as_ptr() as *const T, size)
-    }
+    unsafe { slice::from_raw_parts(data.as_ptr() as *const T, size) }
 }
 
 fn read_magic(mmap: &Option<Box<Mmap>>) -> u32 {
@@ -1230,9 +1403,7 @@ fn read_magic(mmap: &Option<Box<Mmap>>) -> u32 {
 
 fn mmap_to_slice(mmap: &Option<Box<Mmap>>) -> &'static [u8] {
     let data: &[u8] = &*mmap.as_ref().unwrap();
-    unsafe {
-        slice::from_raw_parts(data.as_ptr(), data.len())
-    }
+    unsafe { slice::from_raw_parts(data.as_ptr(), data.len()) }
 }
 
 fn init_table<T: TbTable>(e: &T::Entry, name: &str) -> bool {
@@ -1257,11 +1428,9 @@ fn init_table<T: TbTable>(e: &T::Entry, name: &str) -> bool {
     let mut tb_size = [[0; 2]; 6];
     let num = T::num_tables();
     for t in 0..num {
-        tb_size[t][0] =
-            setup_pieces::<T::Enc>(tb.ei_mut(t, 0), e, data, 0, t);
+        tb_size[t][0] = setup_pieces::<T::Enc>(tb.ei_mut(t, 0), e, data, 0, t);
         if split {
-            tb_size[t][1] =
-                setup_pieces::<T::Enc>(tb.ei_mut(t, 1), e, data, 4, t);
+            tb_size[t][1] = setup_pieces::<T::Enc>(tb.ei_mut(t, 1), e, data, 4, t);
         }
         data = &data[e.num() as usize + 1 + (e.pawns(1) > 0) as usize..];
     }
@@ -1270,12 +1439,22 @@ fn init_table<T: TbTable>(e: &T::Entry, name: &str) -> bool {
     let mut size = [[0; 6]; 6];
     let mut flags = 0;
     for t in 0..num {
-        tb.ei_mut(t, 0).precomp = Some(setup_pairs(&mut data, tb_size[t][0],
-            &mut size[t][0..3], &mut flags, true));
+        tb.ei_mut(t, 0).precomp = Some(setup_pairs(
+            &mut data,
+            tb_size[t][0],
+            &mut size[t][0..3],
+            &mut flags,
+            true,
+        ));
         tb.set_flags(t, flags);
         if split {
-            tb.ei_mut(t, 1).precomp = Some(setup_pairs(&mut data,
-                tb_size[t][1], &mut size[t][3..6], &mut flags, true));
+            tb.ei_mut(t, 1).precomp = Some(setup_pairs(
+                &mut data,
+                tb_size[t][1],
+                &mut size[t][3..6],
+                &mut flags,
+                true,
+            ));
         }
     }
 
@@ -1312,37 +1491,30 @@ fn init_table<T: TbTable>(e: &T::Entry, name: &str) -> bool {
     }
 
     for t in 0..num {
-        tb.ei_mut(t, 0).precomp.as_mut().unwrap().index_table =
-            slice(&mut data, size[t][0]);
+        tb.ei_mut(t, 0).precomp.as_mut().unwrap().index_table = slice(&mut data, size[t][0]);
         if split {
-            tb.ei_mut(t, 1).precomp.as_mut().unwrap().index_table =
-                slice(&mut data, size[t][3]);
+            tb.ei_mut(t, 1).precomp.as_mut().unwrap().index_table = slice(&mut data, size[t][3]);
         }
     }
 
     for t in 0..num {
-        tb.ei_mut(t, 0).precomp.as_mut().unwrap().size_table =
-            slice(&mut data, size[t][1]);
+        tb.ei_mut(t, 0).precomp.as_mut().unwrap().size_table = slice(&mut data, size[t][1]);
         if split {
-            tb.ei_mut(t, 1).precomp.as_mut().unwrap().size_table =
-                slice(&mut data, size[t][4]);
+            tb.ei_mut(t, 1).precomp.as_mut().unwrap().size_table = slice(&mut data, size[t][4]);
         }
     }
 
     for t in 0..num {
         data = align_slice(data, 64);
-        tb.ei_mut(t, 0).precomp.as_mut().unwrap().data =
-            slice(&mut data, size[t][2]);
+        tb.ei_mut(t, 0).precomp.as_mut().unwrap().data = slice(&mut data, size[t][2]);
         if split {
             data = align_slice(data, 64);
-            tb.ei_mut(t, 1).precomp.as_mut().unwrap().data =
-                slice(&mut data, size[t][5]);
+            tb.ei_mut(t, 1).precomp.as_mut().unwrap().data = slice(&mut data, size[t][5]);
         }
     }
 
     if T::Type::TYPE == Dtm::TYPE
-        && calc_key_from_pieces(&tb.ei(0, 0).pieces[0..e.num() as usize])
-            != e.key()
+        && calc_key_from_pieces(&tb.ei(0, 0).pieces[0..e.num() as usize]) != e.key()
     {
         tb.set_switched();
     }
@@ -1351,8 +1523,11 @@ fn init_table<T: TbTable>(e: &T::Entry, name: &str) -> bool {
 }
 
 fn fill_squares(
-    pos: &Position, pc: &[u8; TB_PIECES], num: usize, flip: bool,
-    p: &mut [Square; TB_PIECES]
+    pos: &Position,
+    pc: &[u8; TB_PIECES],
+    num: usize,
+    flip: bool,
+    p: &mut [Square; TB_PIECES],
 ) {
     let mut i = 0;
     loop {
@@ -1368,9 +1543,11 @@ fn fill_squares(
     }
 }
 
-fn probe_helper<T: TbTable> (
-    pos: &Position, e: &T::Entry, s: <T::Type as TbType>::Select,
-    success: &mut i32
+fn probe_helper<T: TbTable>(
+    pos: &Position,
+    e: &T::Entry,
+    s: <T::Type as TbType>::Select,
+    success: &mut i32,
 ) -> i32 {
     if !e.exists() {
         *success = 0;
@@ -1391,21 +1568,25 @@ fn probe_helper<T: TbTable> (
         }
     }
 
-    let flip = if !e.symmetric() { (key != e.key()) != tb.switched() }
-        else { pos.side_to_move() != WHITE };
+    let flip = if !e.symmetric() {
+        (key != e.key()) != tb.switched()
+    } else {
+        pos.side_to_move() != WHITE
+    };
     let bside = (!e.symmetric()
-        && (((key != e.key()) != tb.switched()) ==
-            (pos.side_to_move() == WHITE))) as usize;
+        && (((key != e.key()) != tb.switched()) == (pos.side_to_move() == WHITE)))
+        as usize;
 
     let t = if T::Enc::ENC != PieceEnc::ENC {
         let color = Piece(tb.ei(0, 0).pieces[0] as u32).color();
         let b = pos.pieces_cp(color ^ flip, PAWN);
         leading_pawn_table::<T::Enc>(b, flip) as usize
-    } else { 0 };
+    } else {
+        0
+    };
 
     let mut p: [Square; TB_PIECES] = [Square(0); TB_PIECES];
-    fill_squares(pos, &tb.ei(t, bside).pieces, e.num() as usize, flip,
-            &mut p);
+    fill_squares(pos, &tb.ei(t, bside).pieces, e.num() as usize, flip, &mut p);
     if T::Enc::ENC != PieceEnc::ENC && flip {
         for i in 0..e.num() as usize {
             p[i] = !p[i];
@@ -1413,15 +1594,12 @@ fn probe_helper<T: TbTable> (
     }
     let idx = encode::<T::Enc>(&mut p, &tb.ei(t, bside), e);
 
-    let res = decompress_pairs(
-            &tb.ei(t, bside).precomp.as_ref().unwrap(), idx);
+    let res = decompress_pairs(&tb.ei(t, bside).precomp.as_ref().unwrap(), idx);
 
     tb.map(t, bside, res, s)
 }
 
-fn probe_table<T: TbType>(
-    pos: &Position, s: T::Select, success: &mut i32
-) -> i32 {
+fn probe_table<T: TbType>(pos: &Position, s: T::Select, success: &mut i32) -> i32 {
     // Obtain the position's material signature key
     let key = pos.material_key();
 
@@ -1453,15 +1631,13 @@ fn probe_table<T: TbType>(
 }
 
 // Add underpromotion captures to list of captures.
-fn add_underprom_caps(
-    pos: &Position, list: &mut [ExtMove], end: usize
-) -> usize {
+fn add_underprom_caps(pos: &Position, list: &mut [ExtMove], end: usize) -> usize {
     let mut extra = end;
 
     for idx in 0..end {
         let m = list[idx].m;
         if m.move_type() == PROMOTION && pos.piece_on(m.to()) != NO_PIECE {
-            list[extra    ].m = Move(m.0 - (1 << 12));
+            list[extra].m = Move(m.0 - (1 << 12));
             list[extra + 1].m = Move(m.0 - (2 << 12));
             list[extra + 2].m = Move(m.0 - (3 << 12));
             extra += 3;
@@ -1471,12 +1647,13 @@ fn add_underprom_caps(
     extra
 }
 
-fn probe_ab(
-    pos: &mut Position, mut alpha: i32, beta: i32, success: &mut i32
-) -> i32 {
+fn probe_ab(pos: &mut Position, mut alpha: i32, beta: i32, success: &mut i32) -> i32 {
     assert!(pos.ep_square() == Square::NONE);
 
-    let mut list: [ExtMove; 64] = [ExtMove { m: Move::NONE, value: 0 }; 64];
+    let mut list: [ExtMove; 64] = [ExtMove {
+        m: Move::NONE,
+        value: 0,
+    }; 64];
 
     let end = if pos.checkers() == 0 {
         let end = generate::<Captures>(pos, &mut list, 0);
@@ -1506,7 +1683,11 @@ fn probe_ab(
 
     let v = probe_table::<Wdl>(pos, (), success);
 
-    if alpha >= v { alpha } else { v }
+    if alpha >= v {
+        alpha
+    } else {
+        v
+    }
 }
 
 // Probe the WDL table for a particular position.
@@ -1526,7 +1707,10 @@ fn probe_ab(
 //  2 : win
 pub fn probe_wdl(pos: &mut Position, success: &mut i32) -> i32 {
     // Generate (at least) all legal en-passant captures
-    let mut list: [ExtMove; 64] = [ExtMove { m: Move::NONE, value: 0 }; 64];
+    let mut list: [ExtMove; 64] = [ExtMove {
+        m: Move::NONE,
+        value: 0,
+    }; 64];
 
     let mut end = if pos.checkers() == 0 {
         let end = generate::<Captures>(pos, &mut list, 0);
@@ -1623,7 +1807,10 @@ fn probe_dtm_loss(pos: &mut Position, success: &mut i32) -> Value {
     let mut num_ep = 0;
 
     // Generate at least all legal captures including (under)promotions
-    let mut list: [ExtMove; 64] = [ExtMove { m: Move::NONE, value: 0 }; 64];
+    let mut list: [ExtMove; 64] = [ExtMove {
+        m: Move::NONE,
+        value: 0,
+    }; 64];
     let end = if pos.checkers() == 0 {
         let end = generate::<Captures>(pos, &mut list, 0);
         add_underprom_caps(pos, &mut list, end)
@@ -1666,7 +1853,10 @@ fn probe_dtm_win(pos: &mut Position, success: &mut i32) -> Value {
     let mut best = -Value::INFINITE;
 
     // Generate all moves
-    let mut list: [ExtMove; 256] = [ExtMove { m: Move::NONE, value: 0 }; 256];
+    let mut list: [ExtMove; 256] = [ExtMove {
+        m: Move::NONE,
+        value: 0,
+    }; 256];
     let end = if pos.checkers() != 0 {
         generate::<Evasions>(pos, &mut list, 0)
     } else {
@@ -1714,7 +1904,7 @@ pub fn probe_dtm(pos: &mut Position, wdl: i32, success: &mut i32) -> Value {
     }
 }
 
-const WDL_TO_DTZ: [i32; 5] = [ -1, -101, 0, 101, 1 ];
+const WDL_TO_DTZ: [i32; 5] = [-1, -101, 0, 101, 1];
 
 // Probe the DTZ table for a particular position.
 // If *success != 0, the probe was successful.
@@ -1760,7 +1950,10 @@ pub fn probe_dtz(pos: &mut Position, success: &mut i32) -> i32 {
         return WDL_TO_DTZ[(wdl + 2) as usize];
     }
 
-    let mut list: [ExtMove; 256] = [ExtMove { m: Move::NONE, value: 0 }; 256];
+    let mut list: [ExtMove; 256] = [ExtMove {
+        m: Move::NONE,
+        value: 0,
+    }; 256];
     let mut end = 0;
 
     // If winning, check for a winning pawn move.
@@ -1772,10 +1965,7 @@ pub fn probe_dtz(pos: &mut Position, success: &mut i32) -> i32 {
         };
 
         for &m in list[0..end].iter() {
-            if pos.moved_piece(m.m).piece_type() != PAWN
-                || pos.capture(m.m)
-                || !pos.legal(m.m)
-            {
+            if pos.moved_piece(m.m).piece_type() != PAWN || pos.capture(m.m) || !pos.legal(m.m) {
                 continue;
             }
             let gives_check = pos.gives_check(m.m);
@@ -1798,8 +1988,7 @@ pub fn probe_dtz(pos: &mut Position, success: &mut i32) -> i32 {
 
     let dtz = probe_table::<Dtz>(pos, wdl, success);
     if *success >= 0 {
-        return
-            WDL_TO_DTZ[(wdl + 2) as usize] + if wdl > 0 { dtz } else { -dtz };
+        return WDL_TO_DTZ[(wdl + 2) as usize] + if wdl > 0 { dtz } else { -dtz };
     }
 
     // *success < 0 means we need to probe DTZ for the other side to move
@@ -1824,10 +2013,7 @@ pub fn probe_dtz(pos: &mut Position, success: &mut i32) -> i32 {
         // We can skip pawn moves and captures.
         // If wdl > 0, we already caught them. If wdl < 0, the initial
         // value of best already takes account of them.
-        if pos.capture(m.m)
-            || pos.moved_piece(m.m).piece_type() == PAWN
-            || !pos.legal(m.m)
-        {
+        if pos.capture(m.m) || pos.moved_piece(m.m).piece_type() == PAWN || !pos.legal(m.m) {
             continue;
         }
         let gives_check = pos.gives_check(m.m);
@@ -1866,7 +2052,11 @@ fn root_probe_dtz(pos: &mut Position, root_moves: &mut RootMoves) -> bool {
 
     // The border between draw and win lies at rank 1 or rank 900, depending
     // on whether the 50-move rule is used
-    let bound = if ucioption::get_bool("Syzygy50MoveRule") { 900 } else { 1 };
+    let bound = if ucioption::get_bool("Syzygy50MoveRule") {
+        900
+    } else {
+        1
+    };
 
     // Probe, rank and score each move
     for ref mut rm in root_moves.iter_mut() {
@@ -1890,10 +2080,7 @@ fn root_probe_dtz(pos: &mut Position, root_moves: &mut RootMoves) -> bool {
             }
         }
         // Make sure that a mating move gets value 1
-        if pos.checkers() != 0
-            && v == 2
-            && MoveList::new::<Legal>(pos).len() == 0
-        {
+        if pos.checkers() != 0 && v == 2 && MoveList::new::<Legal>(pos).len() == 0 {
             v = 1;
         }
 
@@ -1907,23 +2094,37 @@ fn root_probe_dtz(pos: &mut Position, root_moves: &mut RootMoves) -> bool {
         // is in sight. Note that moves ranked 900 have dtz + cnt50 == 100,
         // which in rare cases may be insufficient to win as dtz may be
         // off by one (see the comments before probe_dtz()).
-        let r =
-            if v > 0 {
-                if v + cnt50 <= 99 && !rep { 1000 } else { 1000 - (v + cnt50) }
-            } else if v < 0 {
-                if -v * 2 + cnt50 < 100 { -1000 } else { -1000 + (-v + cnt50) }
-            } else { 0 };
+        let r = if v > 0 {
+            if v + cnt50 <= 99 && !rep {
+                1000
+            } else {
+                1000 - (v + cnt50)
+            }
+        } else if v < 0 {
+            if -v * 2 + cnt50 < 100 {
+                -1000
+            } else {
+                -1000 + (-v + cnt50)
+            }
+        } else {
+            0
+        };
         rm.tb_rank = r;
 
         // Determine the score to be displayed for this move. Assign at
         // least 1 cp to cursed wins and let it grow to 49 cp as the position
         // gets closer to a real win.
-        rm.tb_score =
-            if r >= bound { Value::MATE - MAX_MATE_PLY - 1 }
-            else if r > 0 { std::cmp::max(3, r - 800) * PawnValueEg / 200 }
-            else if r == 0 { Value::DRAW }
-            else if r > -bound { std::cmp::max(-3, r+800) * PawnValueEg / 200 }
-            else { -Value::MATE + MAX_MATE_PLY + 1 };
+        rm.tb_score = if r >= bound {
+            Value::MATE - MAX_MATE_PLY - 1
+        } else if r > 0 {
+            std::cmp::max(3, r - 800) * PawnValueEg / 200
+        } else if r == 0 {
+            Value::DRAW
+        } else if r > -bound {
+            std::cmp::max(-3, r + 800) * PawnValueEg / 200
+        } else {
+            -Value::MATE + MAX_MATE_PLY + 1
+        };
     }
 
     true
@@ -1933,7 +2134,7 @@ fn root_probe_dtz(pos: &mut Position, root_moves: &mut RootMoves) -> bool {
 // This is a fallback for the case that some or all DTZ tables are missing.
 // A return value of false means that not all probes were successful.
 fn root_probe_wdl(pos: &mut Position, root_moves: &mut RootMoves) -> bool {
-    const WDL_TO_RANK: [i32; 5] = [ -1000, -899, 0, 899, 1000 ];
+    const WDL_TO_RANK: [i32; 5] = [-1000, -899, 0, 899, 1000];
     const WDL_TO_VALUE: [Value; 5] = [
         Value(-32000 + 128 + 1), Value(-2), Value(0), Value(2),
         Value(32000 - 128 - 1)
@@ -1958,7 +2159,13 @@ fn root_probe_wdl(pos: &mut Position, root_moves: &mut RootMoves) -> bool {
             return false;
         }
         if !move50 {
-            v = if v > 0 { 2 } else if v < 0 { -2 } else { 0 };
+            v = if v > 0 {
+                2
+            } else if v < 0 {
+                -2
+            } else {
+                0
+            };
         }
         rm.tb_rank = WDL_TO_RANK[(v + 2) as usize];
         rm.tb_score = WDL_TO_VALUE[(v + 2) as usize];
@@ -1978,9 +2185,13 @@ fn root_probe_dtm(pos: &mut Position, root_moves: &mut RootMoves) -> bool {
     // Probe each move
     for ref mut rm in root_moves.iter_mut() {
         // Use tb_score to find out if the position is won or lost
-        let wdl = if rm.tb_score > PawnValueEg { 2 }
-            else if rm.tb_score < -PawnValueEg { -2 }
-            else { 0 };
+        let wdl = if rm.tb_score > PawnValueEg {
+            2
+        } else if rm.tb_score < -PawnValueEg {
+            -2
+        } else {
+            0
+        };
 
         if wdl == 0 {
             tmp_score.push(Value::ZERO);
@@ -2074,9 +2285,7 @@ pub fn rank_root_moves(pos: &mut Position, root_moves: &mut RootMoves) {
     let mut dtz_available = true;
     let mut dtm_available = false;
 
-    if cardinality() >= popcount(pos.pieces())
-        && !pos.has_castling_right(ANY_CASTLING)
-    {
+    if cardinality() >= popcount(pos.pieces()) && !pos.has_castling_right(ANY_CASTLING) {
         // Try to rank moves using DTZ tables
         root_in_tb = root_probe_dtz(pos, root_moves);
 
@@ -2094,7 +2303,8 @@ pub fn rank_root_moves(pos: &mut Position, root_moves: &mut RootMoves) {
         }
     }
 
-    if root_in_tb { // Ranking was successful
+    if root_in_tb {
+        // Ranking was successful
         // Sort moves according to TB rank
         root_moves.sort();
 
@@ -2118,185 +2328,113 @@ pub fn rank_root_moves(pos: &mut Position, root_moves: &mut RootMoves) {
 }
 
 const OFF_DIAG: [i8; 64] = [
-    0, -1, -1, -1, -1, -1, -1, -1,
-    1,  0, -1, -1, -1, -1, -1, -1,
-    1,  1,  0, -1, -1, -1, -1, -1,
-    1,  1,  1,  0, -1, -1, -1, -1,
-    1,  1,  1,  1,  0, -1, -1, -1,
-    1,  1,  1,  1,  1,  0, -1, -1,
-    1,  1,  1,  1,  1,  1,  0, -1,
-    1,  1,  1,  1,  1,  1,  1,  0,
+    0, -1, -1, -1, -1, -1, -1, -1, 1, 0, -1, -1, -1, -1, -1, -1, 1, 1, 0, -1, -1, -1, -1, -1, 1, 1,
+    1, 0, -1, -1, -1, -1, 1, 1, 1, 1, 0, -1, -1, -1, 1, 1, 1, 1, 1, 0, -1, -1, 1, 1, 1, 1, 1, 1, 0,
+    -1, 1, 1, 1, 1, 1, 1, 1, 0,
 ];
 
 const TRIANGLE: [u8; 64] = [
-    6, 0, 1, 2, 2, 1, 0, 6,
-    0, 7, 3, 4, 4, 3, 7, 0,
-    1, 3, 8, 5, 5, 8, 3, 1,
-    2, 4, 5, 9, 9, 5, 4, 2,
-    2, 4, 5, 9, 9, 5, 4, 2,
-    1, 3, 8, 5, 5, 8, 3, 1,
-    0, 7, 3, 4, 4, 3, 7, 0,
-    6, 0, 1, 2, 2, 1, 0, 6,
+    6, 0, 1, 2, 2, 1, 0, 6, 0, 7, 3, 4, 4, 3, 7, 0, 1, 3, 8, 5, 5, 8, 3, 1, 2, 4, 5, 9, 9, 5, 4, 2,
+    2, 4, 5, 9, 9, 5, 4, 2, 1, 3, 8, 5, 5, 8, 3, 1, 0, 7, 3, 4, 4, 3, 7, 0, 6, 0, 1, 2, 2, 1, 0, 6,
 ];
 
 const FLIP_DIAG: [u8; 64] = [
-    0,  8, 16, 24, 32, 40, 48, 56,
-    1,  9, 17, 25, 33, 41, 49, 57,
-    2, 10, 18, 26, 34, 42, 50, 58,
-    3, 11, 19, 27, 35, 43, 51, 59,
-    4, 12, 20, 28, 36, 44, 52, 60,
-    5, 13, 21, 29, 37, 45, 53, 61,
-    6, 14, 22, 30, 38, 46, 54, 62,
-    7, 15, 23, 31, 39, 47, 55, 63,
+    0, 8, 16, 24, 32, 40, 48, 56, 1, 9, 17, 25, 33, 41, 49, 57, 2, 10, 18, 26, 34, 42, 50, 58, 3,
+    11, 19, 27, 35, 43, 51, 59, 4, 12, 20, 28, 36, 44, 52, 60, 5, 13, 21, 29, 37, 45, 53, 61, 6,
+    14, 22, 30, 38, 46, 54, 62, 7, 15, 23, 31, 39, 47, 55, 63,
 ];
 
 const LOWER: [u8; 64] = [
-    28,  0,  1,  2,  3,  4,  5,  6,
-     0, 29,  7,  8,  9, 10, 11, 12,
-     1,  7, 30, 13, 14, 15, 16, 17,
-     2,  8, 13, 31, 18, 19, 20, 21,
-     3,  9, 14, 18, 32, 22, 23, 24,
-     4, 10, 15, 19, 22, 33, 25, 26,
-     5, 11, 16, 20, 23, 25, 34, 27,
-     6, 12, 17, 21, 24, 26, 27, 35,
+    28, 0, 1, 2, 3, 4, 5, 6, 0, 29, 7, 8, 9, 10, 11, 12, 1, 7, 30, 13, 14, 15, 16, 17, 2, 8, 13,
+    31, 18, 19, 20, 21, 3, 9, 14, 18, 32, 22, 23, 24, 4, 10, 15, 19, 22, 33, 25, 26, 5, 11, 16, 20,
+    23, 25, 34, 27, 6, 12, 17, 21, 24, 26, 27, 35,
 ];
 
 const DIAG: [u8; 64] = [
-     0,  0,  0,  0,  0,  0,  0,  8,
-     0,  1,  0,  0,  0,  0,  9,  0,
-     0,  0,  2,  0,  0, 10,  0,  0,
-     0,  0,  0,  3, 11,  0,  0,  0,
-     0,  0,  0, 12,  4,  0,  0,  0,
-     0,  0, 13,  0,  0,  5,  0,  0,
-     0, 14,  0,  0,  0,  0,  6,  0,
-    15,  0,  0,  0,  0,  0,  0,  7,
+    0, 0, 0, 0, 0, 0, 0, 8, 0, 1, 0, 0, 0, 0, 9, 0, 0, 0, 2, 0, 0, 10, 0, 0, 0, 0, 0, 3, 11, 0, 0,
+    0, 0, 0, 0, 12, 4, 0, 0, 0, 0, 0, 13, 0, 0, 5, 0, 0, 0, 14, 0, 0, 0, 0, 6, 0, 15, 0, 0, 0, 0,
+    0, 0, 7,
 ];
 
 const FLAP: [u8; 64] = [
-    0,  0,  0,  0,  0,  0,  0, 0,
-    0,  6, 12, 18, 18, 12,  6, 0,
-    1,  7, 13, 19, 19, 13,  7, 1,
-    2,  8, 14, 20, 20, 14,  8, 2,
-    3,  9, 15, 21, 21, 15,  9, 3,
-    4, 10, 16, 22, 22, 16, 10, 4,
-    5, 11, 17, 23, 23, 17, 11, 5,
-    0,  0,  0,  0,  0,  0,  0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 12, 18, 18, 12, 6, 0, 1, 7, 13, 19, 19, 13, 7, 1, 2, 8, 14, 20,
+    20, 14, 8, 2, 3, 9, 15, 21, 21, 15, 9, 3, 4, 10, 16, 22, 22, 16, 10, 4, 5, 11, 17, 23, 23, 17,
+    11, 5, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
 const PTWIST: [u8; 64] = [
-     0,  0,  0,  0,  0,  0,  0,  0,
-    47, 35, 23, 11, 10, 22, 34, 46,
-    45, 33, 21,  9,  8, 20, 32, 44,
-    43, 31, 19,  7,  6, 18, 30, 42,
-    41, 29, 17,  5,  4, 16, 28, 40,
-    39, 27, 15,  3,  2, 14, 26, 38,
-    37, 25, 13,  1,  0, 12, 24, 36,
-     0,  0,  0,  0,  0,  0,  0,  0
+    0, 0, 0, 0, 0, 0, 0, 0, 47, 35, 23, 11, 10, 22, 34, 46, 45, 33, 21, 9, 8, 20, 32, 44, 43, 31,
+    19, 7, 6, 18, 30, 42, 41, 29, 17, 5, 4, 16, 28, 40, 39, 27, 15, 3, 2, 14, 26, 38, 37, 25, 13,
+    1, 0, 12, 24, 36, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
 const FLAP2: [u8; 64] = [
-     0,  0,  0,  0,  0,  0,  0,  0,
-     0,  1,  2,  3,  3,  2,  1,  0,
-     4,  5,  6,  7,  7,  6,  5,  4,
-     8,  9, 10, 11, 11, 10,  9,  8,
-    12, 13, 14, 15, 15, 14, 13, 12,
-    16, 17, 18, 19, 19, 18, 17, 16,
-    20, 21, 22, 23, 23, 22, 21, 20,
-     0,  0,  0,  0,  0,  0,  0,  0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 3, 2, 1, 0, 4, 5, 6, 7, 7, 6, 5, 4, 8, 9, 10, 11, 11, 10,
+    9, 8, 12, 13, 14, 15, 15, 14, 13, 12, 16, 17, 18, 19, 19, 18, 17, 16, 20, 21, 22, 23, 23, 22,
+    21, 20, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
 const PTWIST2: [u8; 64] = [
-     0,  0,  0,  0,  0,  0,  0,  0,
-    47, 45, 43, 41, 40, 42, 44, 46,
-    39, 37, 35, 33, 32, 34, 36, 38,
-    31, 29, 27, 25, 24, 26, 28, 30,
-    23, 21, 19, 17, 16, 18, 20, 22,
-    15, 13, 11,  9,  8, 10, 12, 14,
-     7,  5,  3,  1,  0,  2,  4,  6,
-     0,  0,  0,  0,  0,  0,  0,  0,
+    0, 0, 0, 0, 0, 0, 0, 0, 47, 45, 43, 41, 40, 42, 44, 46, 39, 37, 35, 33, 32, 34, 36, 38, 31, 29,
+    27, 25, 24, 26, 28, 30, 23, 21, 19, 17, 16, 18, 20, 22, 15, 13, 11, 9, 8, 10, 12, 14, 7, 5, 3,
+    1, 0, 2, 4, 6, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
 
 const KK_IDX: [[u16; 64]; 10] = [
-    [   0,   0,   0,   0,   1,   2,   3,   4,
-        0,   0,   0,   5,   6,   7,   8,   9,
-       10,  11,  12,  13,  14,  15,  16,  17,
-       18,  19,  20,  21,  22,  23,  24,  25,
-       26,  27,  28,  29,  30,  31,  32,  33,
-       34,  35,  36,  37,  38,  39,  40,  41,
-       42,  43,  44,  45,  46,  47,  48,  49,
-       50,  51,  52,  53,  54,  55,  56,  57, ],
-    [  58,   0,   0,   0,  59,  60,  61,  62,
-       63,   0,   0,   0,  64,  65,  66,  67,
-       68,  69,  70,  71,  72,  73,  74,  75,
-       76,  77,  78,  79,  80,  81,  82,  83,
-       84,  85,  86,  87,  88,  89,  90,  91,
-       92,  93,  94,  95,  96,  97,  98,  99,
-      100, 101, 102, 103, 104, 105, 106, 107,
-      108, 109, 110, 111, 112, 113, 114, 115 ],
-    [ 116, 117,   0,   0,   0, 118, 119, 120,
-      121, 122,   0,   0,   0, 123, 124, 125,
-      126, 127, 128, 129, 130, 131, 132, 133,
-      134, 135, 136, 137, 138, 139, 140, 141,
-      142, 143, 144, 145, 146, 147, 148, 149,
-      150, 151, 152, 153, 154, 155, 156, 157,
-      158, 159, 160, 161, 162, 163, 164, 165,
-      166, 167, 168, 169, 170, 171, 172, 173 ],
-    [ 174,   0,   0,   0, 175, 176, 177, 178,
-      179,   0,   0,   0, 180, 181, 182, 183,
-      184,   0,   0,   0, 185, 186, 187, 188,
-      189, 190, 191, 192, 193, 194, 195, 196,
-      197, 198, 199, 200, 201, 202, 203, 204,
-      205, 206, 207, 208, 209, 210, 211, 212,
-      213, 214, 215, 216, 217, 218, 219, 220,
-      221, 222, 223, 224, 225, 226, 227, 228 ],
-    [ 229, 230,   0,   0,   0, 231, 232, 233,
-      234, 235,   0,   0,   0, 236, 237, 238,
-      239, 240,   0,   0,   0, 241, 242, 243,
-      244, 245, 246, 247, 248, 249, 250, 251,
-      252, 253, 254, 255, 256, 257, 258, 259,
-      260, 261, 262, 263, 264, 265, 266, 267,
-      268, 269, 270, 271, 272, 273, 274, 275,
-      276, 277, 278, 279, 280, 281, 282, 283 ],
-    [ 284, 285, 286, 287, 288, 289, 290, 291,
-      292, 293,   0,   0,   0, 294, 295, 296,
-      297, 298,   0,   0,   0, 299, 300, 301,
-      302, 303,   0,   0,   0, 304, 305, 306,
-      307, 308, 309, 310, 311, 312, 313, 314,
-      315, 316, 317, 318, 319, 320, 321, 322,
-      323, 324, 325, 326, 327, 328, 329, 330,
-      331, 332, 333, 334, 335, 336, 337, 338 ],
-    [   0,   0, 339, 340, 341, 342, 343, 344,
-        0,   0, 345, 346, 347, 348, 349, 350,
-        0,   0, 441, 351, 352, 353, 354, 355,
-        0,   0,   0, 442, 356, 357, 358, 359,
-        0,   0,   0,   0, 443, 360, 361, 362,
-        0,   0,   0,   0,   0, 444, 363, 364,
-        0,   0,   0,   0,   0,   0, 445, 365,
-        0,   0,   0,   0,   0,   0,   0, 446 ],
-    [   0,   0,   0, 366, 367, 368, 369, 370,
-        0,   0,   0, 371, 372, 373, 374, 375,
-        0,   0,   0, 376, 377, 378, 379, 380,
-        0,   0,   0, 447, 381, 382, 383, 384,
-        0,   0,   0,   0, 448, 385, 386, 387,
-        0,   0,   0,   0,   0, 449, 388, 389,
-        0,   0,   0,   0,   0,   0, 450, 390,
-        0,   0,   0,   0,   0,   0,   0, 451 ],
-    [ 452, 391, 392, 393, 394, 395, 396, 397,
-        0,   0,   0,   0, 398, 399, 400, 401,
-        0,   0,   0,   0, 402, 403, 404, 405,
-        0,   0,   0,   0, 406, 407, 408, 409,
-        0,   0,   0,   0, 453, 410, 411, 412,
-        0,   0,   0,   0,   0, 454, 413, 414,
-        0,   0,   0,   0,   0,   0, 455, 415,
-        0,   0,   0,   0,   0,   0,   0, 456 ],
-    [ 457, 416, 417, 418, 419, 420, 421, 422,
-        0, 458, 423, 424, 425, 426, 427, 428,
-        0,   0,   0,   0,   0, 429, 430, 431,
-        0,   0,   0,   0,   0, 432, 433, 434,
-        0,   0,   0,   0,   0, 435, 436, 437,
-        0,   0,   0,   0,   0, 459, 438, 439,
-        0,   0,   0,   0,   0,   0, 460, 440,
-        0,   0,   0,   0,   0,   0,   0, 461 ],
+    [
+        0, 0, 0, 0, 1, 2, 3, 4, 0, 0, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+        21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
+        44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+    ],
+    [
+        58, 0, 0, 0, 59, 60, 61, 62, 63, 0, 0, 0, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75,
+        76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98,
+        99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+    ],
+    [
+        116, 117, 0, 0, 0, 118, 119, 120, 121, 122, 0, 0, 0, 123, 124, 125, 126, 127, 128, 129,
+        130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147,
+        148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165,
+        166, 167, 168, 169, 170, 171, 172, 173,
+    ],
+    [
+        174, 0, 0, 0, 175, 176, 177, 178, 179, 0, 0, 0, 180, 181, 182, 183, 184, 0, 0, 0, 185, 186,
+        187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204,
+        205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222,
+        223, 224, 225, 226, 227, 228,
+    ],
+    [
+        229, 230, 0, 0, 0, 231, 232, 233, 234, 235, 0, 0, 0, 236, 237, 238, 239, 240, 0, 0, 0, 241,
+        242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259,
+        260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277,
+        278, 279, 280, 281, 282, 283,
+    ],
+    [
+        284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 0, 0, 0, 294, 295, 296, 297, 298, 0, 0,
+        0, 299, 300, 301, 302, 303, 0, 0, 0, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314,
+        315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332,
+        333, 334, 335, 336, 337, 338,
+    ],
+    [
+        0, 0, 339, 340, 341, 342, 343, 344, 0, 0, 345, 346, 347, 348, 349, 350, 0, 0, 441, 351,
+        352, 353, 354, 355, 0, 0, 0, 442, 356, 357, 358, 359, 0, 0, 0, 0, 443, 360, 361, 362, 0, 0,
+        0, 0, 0, 444, 363, 364, 0, 0, 0, 0, 0, 0, 445, 365, 0, 0, 0, 0, 0, 0, 0, 446,
+    ],
+    [
+        0, 0, 0, 366, 367, 368, 369, 370, 0, 0, 0, 371, 372, 373, 374, 375, 0, 0, 0, 376, 377, 378,
+        379, 380, 0, 0, 0, 447, 381, 382, 383, 384, 0, 0, 0, 0, 448, 385, 386, 387, 0, 0, 0, 0, 0,
+        449, 388, 389, 0, 0, 0, 0, 0, 0, 450, 390, 0, 0, 0, 0, 0, 0, 0, 451,
+    ],
+    [
+        452, 391, 392, 393, 394, 395, 396, 397, 0, 0, 0, 0, 398, 399, 400, 401, 0, 0, 0, 0, 402,
+        403, 404, 405, 0, 0, 0, 0, 406, 407, 408, 409, 0, 0, 0, 0, 453, 410, 411, 412, 0, 0, 0, 0,
+        0, 454, 413, 414, 0, 0, 0, 0, 0, 0, 455, 415, 0, 0, 0, 0, 0, 0, 0, 456,
+    ],
+    [
+        457, 416, 417, 418, 419, 420, 421, 422, 0, 458, 423, 424, 425, 426, 427, 428, 0, 0, 0, 0,
+        0, 429, 430, 431, 0, 0, 0, 0, 0, 432, 433, 434, 0, 0, 0, 0, 0, 435, 436, 437, 0, 0, 0, 0,
+        0, 459, 438, 439, 0, 0, 0, 0, 0, 0, 460, 440, 0, 0, 0, 0, 0, 0, 0, 461,
+    ],
 ];
 
 static mut BINOMIAL: [[usize; 64]; 7] = [[0; 64]; 7];
@@ -2382,18 +2520,24 @@ fn init_indices() {
                 f *= usize::wrapping_sub(j, k);
                 l *= k + 1;
             }
-            unsafe { BINOMIAL[i][j] = f / l; }
+            unsafe {
+                BINOMIAL[i][j] = f / l;
+            }
         }
     }
 
     for i in 0..6 {
         let mut s = 0;
         for j in 0..24 {
-            unsafe { PAWN_IDX[i][j] = s; }
+            unsafe {
+                PAWN_IDX[i][j] = s;
+            }
             let k = (1 + (j % 6)) * 8 + (j / 6);
             s += binomial(ptwist::<FileEnc>(Square(k as u32)), i);
             if (j + 1) % 6 == 0 {
-                unsafe { PFACTOR[i][j / 6] = s; }
+                unsafe {
+                    PFACTOR[i][j / 6] = s;
+                }
                 s = 0;
             }
         }
@@ -2402,11 +2546,15 @@ fn init_indices() {
     for i in 0..6 {
         let mut s = 0;
         for j in 0..24 {
-            unsafe { PAWN_IDX2[i][j] = s; }
+            unsafe {
+                PAWN_IDX2[i][j] = s;
+            }
             let k = (1 + (j / 4)) * 8 + (j % 4);
             s += binomial(ptwist::<RankEnc>(Square(k as u32)), i);
             if (j + 1) % 4 == 0 {
-                unsafe { PFACTOR2[i][j / 4] = s; }
+                unsafe {
+                    PFACTOR2[i][j / 4] = s;
+                }
                 s = 0;
             }
         }
@@ -2416,26 +2564,35 @@ fn init_indices() {
 fn leading_pawn_table<T: Encoding>(pawns: Bitboard, flip: bool) -> u32 {
     if T::ENC == FileEnc::ENC {
         if pawns & (FILEA_BB | FILEB_BB | FILEG_BB | FILEH_BB) != 0 {
-            if pawns & (FILEA_BB | FILEH_BB) != 0 { FILE_A } else { FILE_B }
+            if pawns & (FILEA_BB | FILEH_BB) != 0 {
+                FILE_A
+            } else {
+                FILE_B
+            }
         } else {
-            if pawns & (FILEC_BB | FILEF_BB) != 0 { FILE_C } else { FILE_D }
+            if pawns & (FILEC_BB | FILEF_BB) != 0 {
+                FILE_C
+            } else {
+                FILE_D
+            }
         }
     } else {
-        let b = if flip { Bitboard(pawns.0.swap_bytes()) } else { pawns };
+        let b = if flip {
+            Bitboard(pawns.0.swap_bytes())
+        } else {
+            pawns
+        };
         lsb(b).rank() - 1
     }
 }
 
-fn encode<T: Encoding>(
-    p: &mut [Square; TB_PIECES], ei: &EncInfo, entry: &T::Entry
-) -> usize {
+fn encode<T: Encoding>(p: &mut [Square; TB_PIECES], ei: &EncInfo, entry: &T::Entry) -> usize {
     let n = entry.num() as usize;
 
     if T::ENC != PieceEnc::ENC {
         for i in 0..entry.pawns(0) {
-            for j in i+1..entry.pawns(0) {
-                if ptwist::<T>(p[i as usize]) < ptwist::<T>(p[j as usize])
-                {
+            for j in i + 1..entry.pawns(0) {
+                if ptwist::<T>(p[i as usize]) < ptwist::<T>(p[j as usize]) {
                     p.swap(i as usize, j as usize);
                 }
             }
@@ -2459,9 +2616,7 @@ fn encode<T: Encoding>(
 
         for i in 0..n {
             if is_off_diag(p[i]) {
-                if off_diag(p[i]) > 0
-                    && i < (if entry.kk_enc() { 2 } else { 3 })
-                {
+                if off_diag(p[i]) > 0 && i < (if entry.kk_enc() { 2 } else { 3 }) {
                     for j in i..n {
                         p[j] = flip_diag(p[j]);
                     }
@@ -2478,17 +2633,22 @@ fn encode<T: Encoding>(
             let s1 = skip(p[1], p[0]);
             let s2 = skip(p[2], p[0]) + skip(p[2], p[1]);
             if is_off_diag(p[0]) {
-                triangle(p[0]) * 63*62 + (p[1].0 as usize - s1) * 62
-                + (p[2].0 as usize - s2)
+                triangle(p[0]) * 63 * 62 + (p[1].0 as usize - s1) * 62 + (p[2].0 as usize - s2)
             } else if is_off_diag(p[1]) {
-                6*63*62 + diag(p[0]) * 28*62 + lower(p[1]) * 62
-                + p[2].0 as usize - s2
+                6 * 63 * 62 + diag(p[0]) * 28 * 62 + lower(p[1]) * 62 + p[2].0 as usize - s2
             } else if is_off_diag(p[2]) {
-                6*63*62 + 4*28*62 + diag(p[0]) * 7*28
-                + (diag(p[1]) - s1) * 28 + lower(p[2])
+                6 * 63 * 62
+                    + 4 * 28 * 62
+                    + diag(p[0]) * 7 * 28
+                    + (diag(p[1]) - s1) * 28
+                    + lower(p[2])
             } else {
-                6*63*62 + 4*28*62 + 4*7*28 + diag(p[0]) * 7*6
-                + (diag(p[1]) - s1) * 6 + (diag(p[2]) - s2)
+                6 * 63 * 62
+                    + 4 * 28 * 62
+                    + 4 * 7 * 28
+                    + diag(p[0]) * 7 * 6
+                    + (diag(p[1]) - s1) * 6
+                    + (diag(p[2]) - s2)
             }
         };
         idx *= ei.factor[0];
@@ -2505,7 +2665,7 @@ fn encode<T: Encoding>(
         let t = i + entry.pawns(1) as usize;
         if t > i {
             for j in i..t {
-                for k in j+1..t {
+                for k in j + 1..t {
                     if p[j].0 > p[k].0 {
                         p.swap(j, k);
                     }
@@ -2527,15 +2687,15 @@ fn encode<T: Encoding>(
 
     while i < n {
         let t = ei.norm[i] as usize;
-        for j in i..i+t {
-            for k in j+1..i+t {
+        for j in i..i + t {
+            for k in j + 1..i + t {
                 if p[j] > p[k] {
                     p.swap(j, k);
                 }
             }
         }
         let mut s = 0;
-        for m in i..i+t {
+        for m in i..i + t {
             let sq = p[m];
             let mut skips = 0;
             for k in 0..i {
@@ -2556,9 +2716,7 @@ fn decompress_pairs(d: &PairsData, idx: usize) -> i32 {
     }
 
     let main_idx = idx >> d.idx_bits;
-    let mut lit_idx  =
-        (idx as isize & ((1isize << d.idx_bits) - 1))
-        - (1isize << (d.idx_bits - 1));
+    let mut lit_idx = (idx as isize & ((1isize << d.idx_bits) - 1)) - (1isize << (d.idx_bits - 1));
     let mut block = u32::from_le(d.index_table[main_idx].block) as usize;
     let idx_offset = u16::from_le(d.index_table[main_idx].offset);
     lit_idx += idx_offset as isize;

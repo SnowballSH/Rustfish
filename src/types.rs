@@ -9,11 +9,15 @@ pub struct Key(pub u64);
 
 impl std::ops::BitXor<Key> for Key {
     type Output = Self;
-    fn bitxor(self, rhs: Self) -> Self { Key(self.0 ^ rhs.0) }
+    fn bitxor(self, rhs: Self) -> Self {
+        Key(self.0 ^ rhs.0)
+    }
 }
 
 impl std::ops::BitXorAssign<Key> for Key {
-    fn bitxor_assign(&mut self, rhs: Key) { *self = *self ^ rhs; }
+    fn bitxor_assign(&mut self, rhs: Key) {
+        *self = *self ^ rhs;
+    }
 }
 
 impl std::fmt::Display for Key {
@@ -24,7 +28,7 @@ impl std::fmt::Display for Key {
 
 pub const MAX_MOVES: usize = 256;
 pub const MAX_PLY: i32 = 128;
-pub const MAX_MATE_PLY : i32 = 128;
+pub const MAX_MATE_PLY: i32 = 128;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Color(pub u32);
@@ -34,12 +38,16 @@ pub const BLACK: Color = Color(1);
 
 impl std::ops::Not for Color {
     type Output = Color;
-    fn not(self) -> Self { Color(self.0 ^ 1) }
+    fn not(self) -> Self {
+        Color(self.0 ^ 1)
+    }
 }
 
 impl std::ops::BitXor<bool> for Color {
     type Output = Self;
-    fn bitxor(self, rhs: bool) -> Self { Color(self.0 ^ (rhs as u32)) }
+    fn bitxor(self, rhs: bool) -> Self {
+        Color(self.0 ^ (rhs as u32))
+    }
 }
 
 impl Iterator for Color {
@@ -77,17 +85,17 @@ impl ColorTrait for Black {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum CastlingSide {
     KING,
-    QUEEN
+    QUEEN,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct CastlingRight(pub u32);
 
-pub const NO_CASTLING : CastlingRight = CastlingRight(0);
-pub const WHITE_OO    : CastlingRight = CastlingRight(1);
-pub const WHITE_OOO   : CastlingRight = CastlingRight(2);
-pub const BLACK_OO    : CastlingRight = CastlingRight(4);
-pub const BLACK_OOO   : CastlingRight = CastlingRight(8);
+pub const NO_CASTLING: CastlingRight = CastlingRight(0);
+pub const WHITE_OO: CastlingRight = CastlingRight(1);
+pub const WHITE_OOO: CastlingRight = CastlingRight(2);
+pub const BLACK_OO: CastlingRight = CastlingRight(4);
+pub const BLACK_OOO: CastlingRight = CastlingRight(8);
 pub const ANY_CASTLING: CastlingRight = CastlingRight(15);
 
 pub trait CastlingRightTrait {
@@ -120,11 +128,11 @@ impl CastlingRight {
         use types::CastlingSide::*;
         match (c, cs) {
             (WHITE, KING) => WHITE_OO,
-            (WHITE, _   ) => WHITE_OOO,
-            (_    , KING) => BLACK_OO,
-            (_    , _   ) => BLACK_OOO
+            (WHITE, _) => WHITE_OOO,
+            (_, KING) => BLACK_OO,
+            (_, _) => BLACK_OOO,
         }
-     }
+    }
 }
 
 impl std::ops::BitOr<CastlingSide> for Color {
@@ -136,25 +144,35 @@ impl std::ops::BitOr<CastlingSide> for Color {
 
 impl std::ops::BitAnd<CastlingRight> for CastlingRight {
     type Output = Self;
-    fn bitand(self, rhs: Self) -> Self { CastlingRight(self.0 & rhs.0) }
+    fn bitand(self, rhs: Self) -> Self {
+        CastlingRight(self.0 & rhs.0)
+    }
 }
 
 impl std::ops::BitOr<CastlingRight> for CastlingRight {
     type Output = Self;
-    fn bitor(self, rhs: Self) -> Self { CastlingRight(self.0 | rhs.0) }
+    fn bitor(self, rhs: Self) -> Self {
+        CastlingRight(self.0 | rhs.0)
+    }
 }
 
 impl std::ops::BitAndAssign<CastlingRight> for CastlingRight {
-    fn bitand_assign(&mut self, rhs: Self) { *self = *self & rhs; }
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = *self & rhs;
+    }
 }
 
 impl std::ops::BitOrAssign<CastlingRight> for CastlingRight {
-    fn bitor_assign(&mut self, rhs: Self) { *self = *self | rhs; }
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self | rhs;
+    }
 }
 
 impl std::ops::Not for CastlingRight {
     type Output = CastlingRight;
-    fn not(self) -> Self { CastlingRight(!self.0) }
+    fn not(self) -> Self {
+        CastlingRight(!self.0)
+    }
 }
 
 impl std::cmp::PartialEq<u32> for CastlingRight {
@@ -176,18 +194,18 @@ pub const EG: usize = 1;
 pub struct ScaleFactor(pub i32);
 
 impl ScaleFactor {
-    pub const DRAW   : ScaleFactor = ScaleFactor(0);
+    pub const DRAW: ScaleFactor = ScaleFactor(0);
     pub const ONEPAWN: ScaleFactor = ScaleFactor(48);
-    pub const NORMAL : ScaleFactor = ScaleFactor(64);
-    pub const MAX    : ScaleFactor = ScaleFactor(128);
-    pub const NONE   : ScaleFactor = ScaleFactor(255);
+    pub const NORMAL: ScaleFactor = ScaleFactor(64);
+    pub const MAX: ScaleFactor = ScaleFactor(128);
+    pub const NONE: ScaleFactor = ScaleFactor(255);
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Bound(pub u32);
 
 impl Bound {
-    pub const NONE : Bound = Bound(0);
+    pub const NONE: Bound = Bound(0);
     pub const UPPER: Bound = Bound(1);
     pub const LOWER: Bound = Bound(2);
     pub const EXACT: Bound = Bound(3);
@@ -195,12 +213,16 @@ impl Bound {
 
 impl std::ops::BitAnd<Bound> for Bound {
     type Output = Self;
-    fn bitand(self, rhs: Self) -> Self { Bound(self.0 & rhs.0) }
+    fn bitand(self, rhs: Self) -> Self {
+        Bound(self.0 & rhs.0)
+    }
 }
 
 impl std::ops::BitOr<Bound> for Bound {
     type Output = Self;
-    fn bitor(self, rhs: Self) -> Self { Bound(self.0 | rhs.0) }
+    fn bitor(self, rhs: Self) -> Self {
+        Bound(self.0 | rhs.0)
+    }
 }
 
 impl std::cmp::PartialEq<u32> for Bound {
@@ -215,12 +237,12 @@ pub struct PieceType(pub u32);
 
 pub const NO_PIECE_TYPE: PieceType = PieceType(0);
 
-pub const PAWN  : PieceType = PieceType(1);
+pub const PAWN: PieceType = PieceType(1);
 pub const KNIGHT: PieceType = PieceType(2);
 pub const BISHOP: PieceType = PieceType(3);
-pub const ROOK  : PieceType = PieceType(4);
-pub const QUEEN : PieceType = PieceType(5);
-pub const KING  : PieceType = PieceType(6);
+pub const ROOK: PieceType = PieceType(4);
+pub const QUEEN: PieceType = PieceType(5);
+pub const KING: PieceType = PieceType(6);
 
 pub const QUEEN_DIAGONAL: PieceType = PieceType(7);
 
@@ -261,33 +283,37 @@ impl PieceTypeTrait for King {
     const TYPE: PieceType = KING;
 }
 
-
-
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Piece(pub u32);
 
 pub const NO_PIECE: Piece = Piece(0);
 
-pub const W_PAWN  : Piece = Piece(1);
+pub const W_PAWN: Piece = Piece(1);
 pub const W_KNIGHT: Piece = Piece(2);
 pub const W_BISHOP: Piece = Piece(3);
-pub const W_ROOK  : Piece = Piece(4);
-pub const W_QUEEN : Piece = Piece(5);
-pub const W_KING  : Piece = Piece(6);
+pub const W_ROOK: Piece = Piece(4);
+pub const W_QUEEN: Piece = Piece(5);
+pub const W_KING: Piece = Piece(6);
 
-pub const B_PAWN  : Piece = Piece(9);
+pub const B_PAWN: Piece = Piece(9);
 pub const B_KNIGHT: Piece = Piece(10);
 pub const B_BISHOP: Piece = Piece(11);
-pub const B_ROOK  : Piece = Piece(12);
-pub const B_QUEEN : Piece = Piece(13);
-pub const B_KING  : Piece = Piece(14);
+pub const B_ROOK: Piece = Piece(12);
+pub const B_QUEEN: Piece = Piece(13);
+pub const B_KING: Piece = Piece(14);
 
 impl Piece {
-    pub fn piece_type(self) -> PieceType { PieceType(self.0 & 7) }
+    pub fn piece_type(self) -> PieceType {
+        PieceType(self.0 & 7)
+    }
 
-    pub fn color(self) -> Color { Color(self.0 >> 3) }
+    pub fn color(self) -> Color {
+        Color(self.0 >> 3)
+    }
 
-    pub fn make(c: Color, pt: PieceType) -> Piece { Piece((c.0 << 3) + pt.0) }
+    pub fn make(c: Color, pt: PieceType) -> Piece {
+        Piece((c.0 << 3) + pt.0)
+    }
 }
 
 impl Iterator for Piece {
@@ -301,12 +327,16 @@ impl Iterator for Piece {
 
 impl std::ops::Not for Piece {
     type Output = Self;
-    fn not(self) -> Self { Piece(self.0 ^ 8) }
+    fn not(self) -> Self {
+        Piece(self.0 ^ 8)
+    }
 }
 
 impl std::ops::BitXor<bool> for Piece {
     type Output = Self;
-    fn bitxor(self, rhs: bool) -> Self { Piece(self.0 ^ ((rhs as u32) << 3)) }
+    fn bitxor(self, rhs: bool) -> Self {
+        Piece(self.0 ^ ((rhs as u32) << 3))
+    }
 }
 
 #[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
@@ -314,55 +344,69 @@ pub struct Depth(pub i32);
 
 impl std::ops::Add<Depth> for Depth {
     type Output = Self;
-    fn add(self, rhs: Self) -> Self { Depth(self.0 + rhs.0) }
+    fn add(self, rhs: Self) -> Self {
+        Depth(self.0 + rhs.0)
+    }
 }
 
 impl std::ops::Sub<Depth> for Depth {
     type Output = Self;
-    fn sub(self, rhs: Self) -> Self { Depth(self.0 - rhs.0) }
+    fn sub(self, rhs: Self) -> Self {
+        Depth(self.0 - rhs.0)
+    }
 }
 
 impl std::ops::AddAssign<Depth> for Depth {
-    fn add_assign(&mut self, rhs: Self) { *self = *self + rhs; }
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
 }
 
 impl std::ops::SubAssign<Depth> for Depth {
-    fn sub_assign(&mut self, rhs: Self) { *self = *self - rhs; }
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
 }
 
 impl std::ops::Mul<i32> for Depth {
     type Output = Self;
-    fn mul(self, rhs: i32) -> Self { Depth(self.0 * rhs) }
+    fn mul(self, rhs: i32) -> Self {
+        Depth(self.0 * rhs)
+    }
 }
 
 impl std::ops::Mul<Depth> for i32 {
     type Output = Depth;
-    fn mul(self, rhs: Depth) -> Depth { Depth(self * rhs.0) }
+    fn mul(self, rhs: Depth) -> Depth {
+        Depth(self * rhs.0)
+    }
 }
 
 impl std::ops::Div<Depth> for Depth {
     type Output = i32;
-    fn div(self, rhs: Depth) -> i32 { self.0 / rhs.0 }
+    fn div(self, rhs: Depth) -> i32 {
+        self.0 / rhs.0
+    }
 }
 
 pub const ONE_PLY: Depth = Depth(1);
 
-pub const DEPTH_ZERO         : Depth = Depth( 0 * ONE_PLY.0);
-pub const DEPTH_QS_CHECKS    : Depth = Depth( 0 * ONE_PLY.0);
-pub const DEPTH_QS_NO_CHECKS : Depth = Depth(-1 * ONE_PLY.0);
+pub const DEPTH_ZERO: Depth = Depth(0 * ONE_PLY.0);
+pub const DEPTH_QS_CHECKS: Depth = Depth(0 * ONE_PLY.0);
+pub const DEPTH_QS_NO_CHECKS: Depth = Depth(-1 * ONE_PLY.0);
 pub const DEPTH_QS_RECAPTURES: Depth = Depth(-5 * ONE_PLY.0);
 
 pub const DEPTH_NONE: Depth = Depth(-6 * ONE_PLY.0);
-pub const DEPTH_MAX : Depth = Depth(MAX_PLY * ONE_PLY.0);
+pub const DEPTH_MAX: Depth = Depth(MAX_PLY * ONE_PLY.0);
 
 impl Depth {
-    pub const ZERO         : Depth = Depth( 0 * ONE_PLY.0);
-    pub const QS_CHECKS    : Depth = Depth( 0 * ONE_PLY.0);
-    pub const QS_NO_CHECKS : Depth = Depth(-1 * ONE_PLY.0);
+    pub const ZERO: Depth = Depth(0 * ONE_PLY.0);
+    pub const QS_CHECKS: Depth = Depth(0 * ONE_PLY.0);
+    pub const QS_NO_CHECKS: Depth = Depth(-1 * ONE_PLY.0);
     pub const QS_RECAPTURES: Depth = Depth(-5 * ONE_PLY.0);
 
     pub const NONE: Depth = Depth(-6 * ONE_PLY.0);
-    pub const MAX : Depth = Depth(MAX_PLY * ONE_PLY.0);
+    pub const MAX: Depth = Depth(MAX_PLY * ONE_PLY.0);
 }
 
 pub type File = u32;
@@ -492,7 +536,9 @@ pub fn relative_square(c: Color, s: Square) -> Square {
 
 impl std::ops::Not for Square {
     type Output = Self;
-    fn not(self) -> Self { Square(self.0 ^ Square::A8.0) }
+    fn not(self) -> Self {
+        Square(self.0 ^ Square::A8.0)
+    }
 }
 
 impl std::ops::BitXor<bool> for Square {
@@ -514,7 +560,7 @@ impl Iterator for Square {
 #[derive(Clone, Copy)]
 pub struct Squares {
     pub start: Square,
-    pub end: Square
+    pub end: Square,
 }
 
 impl Iterator for Squares {
@@ -532,7 +578,7 @@ impl Iterator for Squares {
 
 pub struct SquareList<'a> {
     list: &'a [Square],
-    idx: usize
+    idx: usize,
 }
 
 impl<'a> SquareList<'a> {
@@ -564,22 +610,26 @@ pub struct Direction(pub i32);
 
 impl std::ops::Neg for Direction {
     type Output = Self;
-    fn neg(self) -> Self { Direction(-self.0) }
+    fn neg(self) -> Self {
+        Direction(-self.0)
+    }
 }
 
-pub const NORTH: Direction = Direction( 8);
-pub const EAST : Direction = Direction( 1);
+pub const NORTH: Direction = Direction(8);
+pub const EAST: Direction = Direction(1);
 pub const SOUTH: Direction = Direction(-8);
-pub const WEST : Direction = Direction(-1);
+pub const WEST: Direction = Direction(-1);
 
-pub const NORTH_EAST: Direction = Direction( 9);
-pub const NORTH_WEST: Direction = Direction( 7);
+pub const NORTH_EAST: Direction = Direction(9);
+pub const NORTH_WEST: Direction = Direction(7);
 pub const SOUTH_EAST: Direction = Direction(-7);
 pub const SOUTH_WEST: Direction = Direction(-9);
 
 impl std::ops::Add<Direction> for Direction {
     type Output = Self;
-    fn add(self, rhs: Self) -> Self { Direction(self.0 + rhs.0) }
+    fn add(self, rhs: Self) -> Self {
+        Direction(self.0 + rhs.0)
+    }
 }
 
 impl std::ops::Add<Direction> for Square {
@@ -597,39 +647,45 @@ impl std::ops::Sub<Direction> for Square {
 }
 
 impl std::ops::AddAssign<Direction> for Square {
-    fn add_assign(&mut self, rhs: Direction) { *self = *self + rhs; }
+    fn add_assign(&mut self, rhs: Direction) {
+        *self = *self + rhs;
+    }
 }
 
 impl std::ops::SubAssign<Direction> for Square {
-    fn sub_assign(&mut self, rhs: Direction) { *self = *self - rhs; }
+    fn sub_assign(&mut self, rhs: Direction) {
+        *self = *self - rhs;
+    }
 }
 
 impl std::ops::Mul<Direction> for i32 {
     type Output = Direction;
-    fn mul(self, rhs: Direction) -> Direction { Direction(self * rhs.0) }
+    fn mul(self, rhs: Direction) -> Direction {
+        Direction(self * rhs.0)
+    }
 }
 
 pub fn pawn_push(c: Color) -> Direction {
     match c {
         WHITE => NORTH,
-        _     => SOUTH
+        _ => SOUTH,
     }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct MoveType(pub u32);
 
-pub const NORMAL    : MoveType = MoveType(0);
-pub const PROMOTION : MoveType = MoveType(1 << 14);
-pub const ENPASSANT : MoveType = MoveType(2 << 14);
-pub const CASTLING  : MoveType = MoveType(3 << 14);
+pub const NORMAL: MoveType = MoveType(0);
+pub const PROMOTION: MoveType = MoveType(1 << 14);
+pub const ENPASSANT: MoveType = MoveType(2 << 14);
+pub const CASTLING: MoveType = MoveType(3 << 14);
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Move(pub u32);
 
 impl Move {
-    pub const NONE : Move = Move(0);
-    pub const NULL : Move = Move(65);
+    pub const NONE: Move = Move(0);
+    pub const NULL: Move = Move(65);
 
     pub fn from(self) -> Square {
         Square((self.0 >> 6) & 0x3f)
@@ -672,17 +728,15 @@ impl Move {
 pub struct Value(pub i32);
 
 impl Value {
-    pub const ZERO     : Value = Value(0);
-    pub const DRAW     : Value = Value(0);
+    pub const ZERO: Value = Value(0);
+    pub const DRAW: Value = Value(0);
     pub const KNOWN_WIN: Value = Value(10000);
-    pub const MATE     : Value = Value(32000);
-    pub const INFINITE : Value = Value(32001);
-    pub const NONE     : Value = Value(32002);
+    pub const MATE: Value = Value(32000);
+    pub const INFINITE: Value = Value(32001);
+    pub const NONE: Value = Value(32002);
 
-    pub const MATE_IN_MAX_PLY : Value =
-        Value( Value::MATE.0 - MAX_MATE_PLY - MAX_PLY);
-    pub const MATED_IN_MAX_PLY: Value =
-        Value(-Value::MATE.0 + MAX_MATE_PLY + MAX_PLY);
+    pub const MATE_IN_MAX_PLY: Value = Value(Value::MATE.0 - MAX_MATE_PLY - MAX_PLY);
+    pub const MATED_IN_MAX_PLY: Value = Value(-Value::MATE.0 + MAX_MATE_PLY + MAX_PLY);
 
     pub fn abs(self) -> Value {
         Value(self.0.abs())
@@ -690,39 +744,67 @@ impl Value {
 }
 
 #[allow(non_upper_case_globals)]
-pub const PawnValueMg  : Value = Value(171);
+pub const PawnValueMg: Value = Value(171);
 #[allow(non_upper_case_globals)]
 pub const KnightValueMg: Value = Value(764);
 #[allow(non_upper_case_globals)]
 pub const BishopValueMg: Value = Value(826);
 #[allow(non_upper_case_globals)]
-pub const RookValueMg  : Value = Value(1282);
+pub const RookValueMg: Value = Value(1282);
 #[allow(non_upper_case_globals)]
-pub const QueenValueMg : Value = Value(2526);
+pub const QueenValueMg: Value = Value(2526);
 
 #[allow(non_upper_case_globals)]
-pub const PawnValueEg  : Value = Value(240);
+pub const PawnValueEg: Value = Value(240);
 #[allow(non_upper_case_globals)]
 pub const KnightValueEg: Value = Value(848);
 #[allow(non_upper_case_globals)]
 pub const BishopValueEg: Value = Value(891);
 #[allow(non_upper_case_globals)]
-pub const RookValueEg  : Value = Value(1373);
+pub const RookValueEg: Value = Value(1373);
 #[allow(non_upper_case_globals)]
-pub const QueenValueEg : Value = Value(2646);
+pub const QueenValueEg: Value = Value(2646);
 
-pub const MIDGAME_LIMIT : Value = Value(15258);
-pub const ENDGAME_LIMIT : Value = Value(3915);
+pub const MIDGAME_LIMIT: Value = Value(15258);
+pub const ENDGAME_LIMIT: Value = Value(3915);
 
 const PIECE_VALUE: [[Value; 16]; 2] = [
-    [ Value::ZERO, PawnValueMg, KnightValueMg, BishopValueMg,
-      RookValueMg, QueenValueMg, Value::ZERO, Value::ZERO,
-      Value::ZERO, PawnValueMg, KnightValueMg, BishopValueMg,
-      RookValueMg, QueenValueMg, Value::ZERO, Value::ZERO ],
-    [ Value::ZERO, PawnValueEg, KnightValueEg, BishopValueEg,
-      RookValueEg, QueenValueEg, Value::ZERO, Value::ZERO,
-      Value::ZERO, PawnValueEg, KnightValueEg, BishopValueEg,
-      RookValueEg, QueenValueEg, Value::ZERO, Value::ZERO ]
+    [
+        Value::ZERO,
+        PawnValueMg,
+        KnightValueMg,
+        BishopValueMg,
+        RookValueMg,
+        QueenValueMg,
+        Value::ZERO,
+        Value::ZERO,
+        Value::ZERO,
+        PawnValueMg,
+        KnightValueMg,
+        BishopValueMg,
+        RookValueMg,
+        QueenValueMg,
+        Value::ZERO,
+        Value::ZERO,
+    ],
+    [
+        Value::ZERO,
+        PawnValueEg,
+        KnightValueEg,
+        BishopValueEg,
+        RookValueEg,
+        QueenValueEg,
+        Value::ZERO,
+        Value::ZERO,
+        Value::ZERO,
+        PawnValueEg,
+        KnightValueEg,
+        BishopValueEg,
+        RookValueEg,
+        QueenValueEg,
+        Value::ZERO,
+        Value::ZERO,
+    ],
 ];
 
 pub fn piece_value(phase: usize, pc: Piece) -> Value {
@@ -731,71 +813,101 @@ pub fn piece_value(phase: usize, pc: Piece) -> Value {
 
 impl std::ops::Neg for Value {
     type Output = Self;
-    fn neg(self) -> Self { Value(-self.0) }
+    fn neg(self) -> Self {
+        Value(-self.0)
+    }
 }
 
 impl std::ops::Add<Value> for Value {
     type Output = Self;
-    fn add(self, rhs: Self) -> Self { Value(self.0 + rhs.0) }
+    fn add(self, rhs: Self) -> Self {
+        Value(self.0 + rhs.0)
+    }
 }
 
 impl std::ops::Add<i32> for Value {
     type Output = Self;
-    fn add(self, rhs: i32) -> Self { self + Value(rhs) }
+    fn add(self, rhs: i32) -> Self {
+        self + Value(rhs)
+    }
 }
 
 impl std::ops::Sub<i32> for Value {
     type Output = Self;
-    fn sub(self, rhs: i32) -> Self { self - Value(rhs) }
+    fn sub(self, rhs: i32) -> Self {
+        self - Value(rhs)
+    }
 }
 
 impl std::ops::Sub<Value> for Value {
     type Output = Self;
-    fn sub(self, rhs: Self) -> Self { Value(self.0 - rhs.0) }
+    fn sub(self, rhs: Self) -> Self {
+        Value(self.0 - rhs.0)
+    }
 }
 
 impl std::ops::AddAssign<Value> for Value {
-    fn add_assign(&mut self, rhs: Self) { *self = *self + rhs; }
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
 }
 
 impl std::ops::AddAssign<i32> for Value {
-    fn add_assign(&mut self, rhs: i32) { *self = *self + rhs; }
+    fn add_assign(&mut self, rhs: i32) {
+        *self = *self + rhs;
+    }
 }
 
 impl std::ops::SubAssign<Value> for Value {
-    fn sub_assign(&mut self, rhs: Self) { *self = *self - rhs; }
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
 }
 
 impl std::ops::SubAssign<i32> for Value {
-    fn sub_assign(&mut self, rhs: i32) { *self = *self - rhs; }
+    fn sub_assign(&mut self, rhs: i32) {
+        *self = *self - rhs;
+    }
 }
 
 impl std::ops::Mul<i32> for Value {
     type Output = Self;
-    fn mul(self, rhs: i32) -> Self { Value(self.0 * rhs) }
+    fn mul(self, rhs: i32) -> Self {
+        Value(self.0 * rhs)
+    }
 }
 
 impl std::ops::MulAssign<i32> for Value {
-    fn mul_assign(&mut self, rhs: i32) { *self = *self * rhs; }
+    fn mul_assign(&mut self, rhs: i32) {
+        *self = *self * rhs;
+    }
 }
 
 impl std::ops::Mul<Value> for i32 {
     type Output = Value;
-    fn mul(self, rhs: Value) -> Value { Value(self * rhs.0) }
+    fn mul(self, rhs: Value) -> Value {
+        Value(self * rhs.0)
+    }
 }
 
 impl std::ops::Div<i32> for Value {
     type Output = Self;
-    fn div(self, rhs: i32) -> Self { Value(self.0 / rhs) }
+    fn div(self, rhs: i32) -> Self {
+        Value(self.0 / rhs)
+    }
 }
 
 impl std::ops::DivAssign<i32> for Value {
-    fn div_assign(&mut self, rhs: i32) { *self = *self / rhs; }
+    fn div_assign(&mut self, rhs: i32) {
+        *self = *self / rhs;
+    }
 }
 
 impl std::ops::Div<Value> for Value {
     type Output = i32;
-    fn div(self, rhs: Self) -> i32 { self.0 / rhs.0 }
+    fn div(self, rhs: Self) -> i32 {
+        self.0 / rhs.0
+    }
 }
 
 pub fn mate_in(ply: i32) -> Value {
@@ -827,25 +939,35 @@ impl Score {
 
 impl std::ops::Add<Score> for Score {
     type Output = Self;
-    fn add(self, rhs: Self) -> Self { Score(self.0 + rhs.0) }
+    fn add(self, rhs: Self) -> Self {
+        Score(self.0 + rhs.0)
+    }
 }
 
 impl std::ops::AddAssign<Score> for Score {
-    fn add_assign(&mut self, rhs: Self) { *self = *self + rhs; }
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
 }
 
 impl std::ops::Sub<Score> for Score {
     type Output = Self;
-    fn sub(self, rhs: Self) -> Self { Score(self.0 - rhs.0) }
+    fn sub(self, rhs: Self) -> Self {
+        Score(self.0 - rhs.0)
+    }
 }
 
 impl std::ops::SubAssign<Score> for Score {
-    fn sub_assign(&mut self, rhs: Self) { *self = *self - rhs; }
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
 }
 
 impl std::ops::Neg for Score {
     type Output = Self;
-    fn neg(self) -> Self { Score(-self.0) }
+    fn neg(self) -> Self {
+        Score(-self.0)
+    }
 }
 
 impl std::ops::Mul<i32> for Score {

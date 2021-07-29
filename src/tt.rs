@@ -44,10 +44,7 @@ impl TTEntry {
         Bound((self.gen_bound8 & 3) as u32)
     }
 
-    pub fn save(
-        &mut self, k: Key, v: Value, b: Bound, d: Depth, m: Move, ev: Value,
-        g: u8
-    ) {
+    pub fn save(&mut self, k: Key, v: Value, b: Bound, d: Depth, m: Move, ev: Value, g: u8) {
         debug_assert!(d / ONE_PLY * ONE_PLY == d);
 
         let k16 = (k.0 >> 48) as u16;
@@ -58,10 +55,7 @@ impl TTEntry {
         }
 
         // Don't overwrite more valuable entries
-        if k16 != self.key16
-            || (d / ONE_PLY) as i8 > self.depth8 - 4
-            || b == Bound::EXACT
-        {
+        if k16 != self.key16 || (d / ONE_PLY) as i8 > self.depth8 - 4 || b == Bound::EXACT {
             self.key16 = k16;
             self.value16 = v.0 as i16;
             self.eval16 = ev.0 as i16;
@@ -104,8 +98,7 @@ pub fn generation() -> u8 {
 fn cluster(key: Key) -> &'static mut Cluster {
     unsafe {
         let p: *mut Cluster =
-            TABLE.offset((((key.0 as u32 as u64) *
-                (CLUSTER_COUNT as u64)) >> 32) as isize);
+            TABLE.offset((((key.0 as u32 as u64) * (CLUSTER_COUNT as u64)) >> 32) as isize);
         let c: &'static mut Cluster = &mut *p;
         c
     }
@@ -116,8 +109,7 @@ fn cluster(key: Key) -> &'static mut Cluster {
 // clusters and each cluster consists of CLUSTER_SIZE number of TTEntry.
 
 pub fn resize(mb_size: usize) {
-    let new_cluster_count =
-        mb_size * 1024 * 1024 / std::mem::size_of::<Cluster>();
+    let new_cluster_count = mb_size * 1024 * 1024 / std::mem::size_of::<Cluster>();
 
     unsafe {
         if new_cluster_count == CLUSTER_COUNT {
@@ -152,9 +144,7 @@ pub fn free() {
 // (via the UCI interface).
 
 pub fn clear() {
-    let tt_slice = unsafe {
-        std::slice::from_raw_parts_mut(TABLE, CLUSTER_COUNT)
-    };
+    let tt_slice = unsafe { std::slice::from_raw_parts_mut(TABLE, CLUSTER_COUNT) };
 
     for cluster in tt_slice.iter_mut() {
         for tte in cluster.entry.iter_mut() {
@@ -183,11 +173,8 @@ pub fn probe(key: Key) -> (&'static mut TTEntry, bool) {
 
     for i in 0..CLUSTER_SIZE {
         if cl.entry[i].key16 == 0 || cl.entry[i].key16 == key16 {
-            if cl.entry[i].gen_bound8 & 0xfc != generation()
-                && cl.entry[i].key16 != 0
-            {
-                cl.entry[i].gen_bound8 =
-                    generation() | (cl.entry[i].bound().0 as u8);
+            if cl.entry[i].gen_bound8 & 0xfc != generation() && cl.entry[i].key16 != 0 {
+                cl.entry[i].gen_bound8 = generation() | (cl.entry[i].bound().0 as u8);
             }
             let found = cl.entry[i].key16 != 0;
             return (&mut (cl.entry[i]), found);
@@ -201,12 +188,10 @@ pub fn probe(key: Key) -> (&'static mut TTEntry, bool) {
         // nature we add 259 (256 is the modulus plus 3 to keep the lowest
         // two bound bits from affecting the result) to calculate the entry
         // age correctly even after generation8 overflows into the next cycle.
-        if (cl.entry[r].depth8 as i32) -
-                ((259 + (generation() as i32) -
-                        (cl.entry[r].gen_bound8 as i32)) & 0xfc) * 2
-            > (cl.entry[i].depth8 as i32) -
-                ((259 + (generation() as i32) -
-                        (cl.entry[i].gen_bound8 as i32)) & 0xfc) * 2
+        if (cl.entry[r].depth8 as i32)
+            - ((259 + (generation() as i32) - (cl.entry[r].gen_bound8 as i32)) & 0xfc) * 2
+            > (cl.entry[i].depth8 as i32)
+                - ((259 + (generation() as i32) - (cl.entry[i].gen_bound8 as i32)) & 0xfc) * 2
         {
             r = i;
         }
@@ -219,9 +204,7 @@ pub fn probe(key: Key) -> (&'static mut TTEntry, bool) {
 // a search. The hash is x permill full, as per UCI protocol.
 
 pub fn hashfull() -> i32 {
-    let tt_slice = unsafe {
-        std::slice::from_raw_parts(TABLE, 1000 / CLUSTER_SIZE)
-    };
+    let tt_slice = unsafe { std::slice::from_raw_parts(TABLE, 1000 / CLUSTER_SIZE) };
 
     let mut cnt = 0;
 

@@ -67,43 +67,42 @@ impl Entry {
 const QUADRATIC_OURS: [[i32; 8]; 6] = [
     //             OUR PIECES
     // pair pawn knight bishop rook queen
-    [1667,   0,   0,   0,    0,   0, 0, 0], // Bishop pair
-    [  40,   0,   0,   0,    0,   0, 0, 0], // Pawn
-    [  32, 255,  -3,   0,    0,   0, 0, 0], // Knight     OUR PIECES
-    [   0, 104,   4,   0,    0,   0, 0, 0], // Bishop
-    [ -26,  -2,  47, 105, -149,   0, 0, 0], // Rook
-    [-189,  24, 117, 133, -134, -10, 0, 0], // Queen
+    [1667, 0, 0, 0, 0, 0, 0, 0],           // Bishop pair
+    [40, 0, 0, 0, 0, 0, 0, 0],             // Pawn
+    [32, 255, -3, 0, 0, 0, 0, 0],          // Knight     OUR PIECES
+    [0, 104, 4, 0, 0, 0, 0, 0],            // Bishop
+    [-26, -2, 47, 105, -149, 0, 0, 0],     // Rook
+    [-189, 24, 117, 133, -134, -10, 0, 0], // Queen
 ];
 
 const QUADRATIC_THEIRS: [[i32; 8]; 6] = [
     //           THEIR PIECES
     // pair pawn knight bishop rook queen
-    [   0,   0,   0,   0,   0, 0, 0, 0],    // Bishop pair
-    [  36,   0,   0,   0,   0, 0, 0, 0],    // Pawn
-    [   9,  63,   0,   0,   0, 0, 0, 0],    // Knight    THEIR PIECES
-    [  59,  65,  42,   0,   0, 0, 0, 0],    // Bishop
-    [  46,  39,  24, -24,   0, 0, 0, 0],    // Rook
-    [  97, 100, -42, 137, 268, 0, 0, 0],    // Queen
+    [0, 0, 0, 0, 0, 0, 0, 0],          // Bishop pair
+    [36, 0, 0, 0, 0, 0, 0, 0],         // Pawn
+    [9, 63, 0, 0, 0, 0, 0, 0],         // Knight    THEIR PIECES
+    [59, 65, 42, 0, 0, 0, 0, 0],       // Bishop
+    [46, 39, 24, -24, 0, 0, 0, 0],     // Rook
+    [97, 100, -42, 137, 268, 0, 0, 0], // Queen
 ];
 
 // Helper used to detect a given material distribution
 fn is_kxk(pos: &Position, us: Color) -> bool {
-    !more_than_one(pos.pieces_c(!us))
-    && pos.non_pawn_material_c(us) >= RookValueMg
+    !more_than_one(pos.pieces_c(!us)) && pos.non_pawn_material_c(us) >= RookValueMg
 }
 
 fn is_kbpsks(pos: &Position, us: Color) -> bool {
     pos.non_pawn_material_c(us) == BishopValueMg
-    && pos.count(us, BISHOP) == 1
-    && pos.count(us, PAWN) >= 1
+        && pos.count(us, BISHOP) == 1
+        && pos.count(us, PAWN) >= 1
 }
 
 fn is_kqkrps(pos: &Position, us: Color) -> bool {
     pos.count(us, PAWN) == 0
-    && pos.non_pawn_material_c(us) == QueenValueMg
-    && pos.count(us, QUEEN) == 1
-    && pos.count(!us, ROOK) == 1
-    && pos.count(!us, PAWN) >= 1
+        && pos.non_pawn_material_c(us) == QueenValueMg
+        && pos.count(us, QUEEN) == 1
+        && pos.count(!us, ROOK) == 1
+        && pos.count(!us, PAWN) >= 1
 }
 
 // imbalance() calculates the imbalance by comparing the piece count of
@@ -121,8 +120,8 @@ fn imbalance(pc: &[[i32; 6]; 2], us: Color) -> i32 {
 
         let mut v = 0;
 
-        for pt2 in 0..(pt1+1) {
-            v +=  QUADRATIC_OURS[pt1][pt2] * pc[us.0 as usize][pt2]
+        for pt2 in 0..(pt1 + 1) {
+            v += QUADRATIC_OURS[pt1][pt2] * pc[us.0 as usize][pt2]
                 + QUADRATIC_THEIRS[pt1][pt2] * pc[them.0 as usize][pt2];
         }
 
@@ -157,12 +156,9 @@ pub fn probe(pos: &Position) -> &'static mut Entry {
     // Map total non-pawn material into [PHASE_ENDGAME, PHASE_MIDGAME]
     let npm_w = pos.non_pawn_material_c(WHITE);
     let npm_b = pos.non_pawn_material_c(BLACK);
-    let npm =
-        std::cmp::max(ENDGAME_LIMIT,
-            std::cmp::min(npm_w + npm_b, MIDGAME_LIMIT));
+    let npm = std::cmp::max(ENDGAME_LIMIT, std::cmp::min(npm_w + npm_b, MIDGAME_LIMIT));
     e.game_phase =
-        (((npm - ENDGAME_LIMIT) * PHASE_MIDGAME) /
-            (MIDGAME_LIMIT - ENDGAME_LIMIT)) as i32;
+        (((npm - ENDGAME_LIMIT) * PHASE_MIDGAME) / (MIDGAME_LIMIT - ENDGAME_LIMIT)) as i32;
 
     // Let's look if we have a specialized evaluation function for this
     // particular material configuration. First we look for a fixed
@@ -231,15 +227,23 @@ pub fn probe(pos: &Position) -> &'static mut Entry {
     // and KNK and gives a drawish scale factor for cases such as KRKBP
     // and KmmKm (except for KBBKN).
     if pos.count(WHITE, PAWN) == 0 && npm_w - npm_b <= BishopValueMg {
-        e.factor[WHITE.0 as usize] =
-            if npm_w < RookValueMg { ScaleFactor::DRAW.0 as u8 }
-            else if npm_b <= BishopValueMg { 4 } else { 14 };
+        e.factor[WHITE.0 as usize] = if npm_w < RookValueMg {
+            ScaleFactor::DRAW.0 as u8
+        } else if npm_b <= BishopValueMg {
+            4
+        } else {
+            14
+        };
     }
 
     if pos.count(BLACK, PAWN) == 0 && npm_b - npm_w <= BishopValueMg {
-        e.factor[BLACK.0 as usize] =
-            if npm_b < RookValueMg { ScaleFactor::DRAW.0 as u8 }
-            else if npm_w <= BishopValueMg { 4 } else { 14 };
+        e.factor[BLACK.0 as usize] = if npm_b < RookValueMg {
+            ScaleFactor::DRAW.0 as u8
+        } else if npm_w <= BishopValueMg {
+            4
+        } else {
+            14
+        };
     }
 
     if pos.count(WHITE, PAWN) == 1 && npm_w - npm_b <= BishopValueMg {
@@ -254,12 +258,22 @@ pub fn probe(pos: &Position) -> &'static mut Entry {
     // holder for the bishop pair "extended piece", which allows us to be
     // more flexible in defining bishop pair bonuses.
     let pc = [
-        [ (pos.count(WHITE, BISHOP) > 1) as i32, pos.count(WHITE, PAWN),
-          pos.count(WHITE, KNIGHT), pos.count(WHITE, BISHOP),
-          pos.count(WHITE, ROOK), pos.count(WHITE, QUEEN) ],
-        [ (pos.count(BLACK, BISHOP) > 1) as i32, pos.count(BLACK, PAWN),
-          pos.count(BLACK, KNIGHT), pos.count(BLACK, BISHOP),
-          pos.count(BLACK, ROOK), pos.count(BLACK, QUEEN) ],
+        [
+            (pos.count(WHITE, BISHOP) > 1) as i32,
+            pos.count(WHITE, PAWN),
+            pos.count(WHITE, KNIGHT),
+            pos.count(WHITE, BISHOP),
+            pos.count(WHITE, ROOK),
+            pos.count(WHITE, QUEEN),
+        ],
+        [
+            (pos.count(BLACK, BISHOP) > 1) as i32,
+            pos.count(BLACK, PAWN),
+            pos.count(BLACK, KNIGHT),
+            pos.count(BLACK, BISHOP),
+            pos.count(BLACK, ROOK),
+            pos.count(BLACK, QUEEN),
+        ],
     ];
 
     e.value = ((imbalance(&pc, WHITE) - imbalance(&pc, BLACK)) / 16) as i16;

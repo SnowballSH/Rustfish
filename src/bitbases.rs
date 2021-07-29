@@ -4,7 +4,7 @@ use bitboard::*;
 use types::*;
 
 // There are 24 possible pawn squares: the first 4 files and ranks from 2 to 7
-const MAX_INDEX: usize = 2*24*64*64;
+const MAX_INDEX: usize = 2 * 24 * 64 * 64;
 
 // Each u32 stores results of 32 positions, one per bit
 static mut KPK_BITBASE: [u32; MAX_INDEX / 32] = [0; MAX_INDEX / 32];
@@ -20,27 +20,27 @@ static mut KPK_BITBASE: [u32; MAX_INDEX / 32] = [0; MAX_INDEX / 32];
 // bit 15-17: white pawn RANK_7 - rank
 //            (from RANK_7 - RANK_7 to RANK_7 - RANK_2)
 fn index(us: Color, bksq: Square, wksq: Square, psq: Square) -> usize {
-    (wksq.0 | (bksq.0 << 6) | (us.0 << 12) | (psq.file() << 13) | ((RANK_7 - psq.rank()) << 15)) as usize
+    (wksq.0 | (bksq.0 << 6) | (us.0 << 12) | (psq.file() << 13) | ((RANK_7 - psq.rank()) << 15))
+        as usize
 }
 
 const INVALID: u8 = 0;
 const UNKNOWN: u8 = 1;
-const DRAW   : u8 = 2;
-const WIN    : u8 = 4;
+const DRAW: u8 = 2;
+const WIN: u8 = 4;
 
 struct KPKPosition {
     us: Color,
     ksq: [Square; 2],
     psq: Square,
-    result: u8
+    result: u8,
 }
 
 impl KPKPosition {
     fn new(idx: u32) -> KPKPosition {
-        let ksq = [ Square((idx >> 0) & 0x3f), Square((idx >> 6) & 0x3f) ];
+        let ksq = [Square((idx >> 0) & 0x3f), Square((idx >> 6) & 0x3f)];
         let us = Color((idx >> 12) & 0x01);
-        let psq =
-            Square::make((idx >> 13) & 0x03, RANK_7 - ((idx >> 15) & 0x07));
+        let psq = Square::make((idx >> 13) & 0x03, RANK_7 - ((idx >> 15) & 0x07));
         let result;
 
         // Check if two pieces are on the same square or if a king can be
@@ -48,40 +48,43 @@ impl KPKPosition {
         if Square::distance(ksq[WHITE.0 as usize], ksq[BLACK.0 as usize]) <= 1
             || ksq[WHITE.0 as usize] == psq
             || ksq[BLACK.0 as usize] == psq
-            || (us == WHITE
-                && pawn_attacks(WHITE, psq) & ksq[BLACK.0 as usize] != 0)
+            || (us == WHITE && pawn_attacks(WHITE, psq) & ksq[BLACK.0 as usize] != 0)
         {
             result = INVALID;
         }
-
         // Immediate win if a pawn can be promoted without getting captured
         else if us == WHITE
             && psq.rank() == RANK_7
             && ksq[us.0 as usize] != psq + NORTH
             && (Square::distance(ksq[(!us).0 as usize], psq + NORTH) > 1
-              || pseudo_attacks(KING, ksq[us.0 as usize]) & (psq + NORTH) != 0)
+                || pseudo_attacks(KING, ksq[us.0 as usize]) & (psq + NORTH) != 0)
         {
             result = WIN;
         }
-
         // Immediate draw if it is a stalemate or a king captures undefended
         // pawn
         else if us == BLACK
             && ((pseudo_attacks(KING, ksq[us.0 as usize])
-                & !(pseudo_attacks(KING, ksq[(!us).0 as usize])
-                    | pawn_attacks(!us, psq))) == 0
+                & !(pseudo_attacks(KING, ksq[(!us).0 as usize]) | pawn_attacks(!us, psq)))
+                == 0
                 || pseudo_attacks(KING, ksq[us.0 as usize])
-                    & psq & !pseudo_attacks(KING, ksq[(!us).0 as usize]) != 0)
+                    & psq
+                    & !pseudo_attacks(KING, ksq[(!us).0 as usize])
+                    != 0)
         {
             result = DRAW;
         }
-
         // Position will be classified later
         else {
             result = UNKNOWN;
         }
 
-        KPKPosition { us, ksq, psq, result }
+        KPKPosition {
+            us,
+            ksq,
+            psq,
+            result,
+        }
     }
 
     fn classify(&self, db: &Vec<KPKPosition>) -> u8 {
@@ -99,8 +102,8 @@ impl KPKPosition {
         let psq = self.psq;
 
         let them = if us == WHITE { BLACK } else { WHITE };
-        let good = if us == WHITE { WIN   } else { DRAW  };
-        let bad  = if us == WHITE { DRAW  } else { WIN   };
+        let good = if us == WHITE { WIN } else { DRAW };
+        let bad = if us == WHITE { DRAW } else { WIN };
 
         let mut r = INVALID;
 
@@ -114,22 +117,36 @@ impl KPKPosition {
 
         if us == WHITE {
             if psq.rank() < RANK_7 {
-                r |= db[index(them, self.ksq[them.0 as usize],
-                        self.ksq[us.0 as usize], psq + NORTH)].result;
+                r |= db[index(
+                    them,
+                    self.ksq[them.0 as usize],
+                    self.ksq[us.0 as usize],
+                    psq + NORTH,
+                )]
+                .result;
             }
 
             if psq.rank() == RANK_2
                 && psq + NORTH != self.ksq[us.0 as usize]
                 && psq + NORTH != self.ksq[them.0 as usize]
             {
-                r |= db[index(them, self.ksq[them.0 as usize],
-                        self.ksq[us.0 as usize], psq + 2 * NORTH)].result;
+                r |= db[index(
+                    them,
+                    self.ksq[them.0 as usize],
+                    self.ksq[us.0 as usize],
+                    psq + 2 * NORTH,
+                )]
+                .result;
             }
         }
 
-        if r & good != 0 { good }
-        else if r & UNKNOWN != 0 { UNKNOWN }
-        else { bad }
+        if r & good != 0 {
+            good
+        } else if r & UNKNOWN != 0 {
+            UNKNOWN
+        } else {
+            bad
+        }
     }
 }
 

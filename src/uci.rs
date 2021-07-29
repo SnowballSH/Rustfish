@@ -16,8 +16,7 @@ use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
 // FEN string of the initial position, normal chess
-const START_FEN: &'static str =
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const START_FEN: &'static str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 // position() is called when engine receives the "position" UCI command.
 // The function sets up the position described in the given FEN string ("fen")
@@ -50,7 +49,7 @@ fn position(pos: &mut Position, pos_data: &mut PosData, args: &str) {
     }
 
     // Parse move list
-    let moves = &args[moves+5..].trim();
+    let moves = &args[moves + 5..].trim();
     let iter = moves.split_whitespace();
     for token in iter {
         let m = to_move(pos, token);
@@ -68,10 +67,10 @@ fn position(pos: &mut Position, pos_data: &mut PosData, args: &str) {
 
 fn setoption(args: &str) {
     let idx = args.find("name").unwrap();
-    let args = &args[idx+4..];
+    let args = &args[idx + 4..];
     if let Some(idx) = args.find("value") {
         let name = &args[..idx].trim();
-        let value = &args[idx+5..].trim();
+        let value = &args[idx + 5..].trim();
         ucioption::set(name, value);
     } else {
         let name = args.trim();
@@ -96,20 +95,14 @@ fn go(pos: &mut Position, pos_data: &Arc<RwLock<PosData>>, args: &str) {
                     searchmoves.push(to_move(pos, token));
                 }
             }
-            "wtime" => limits.time[WHITE.0 as usize] =
-                iter.next().unwrap().parse().unwrap(),
-            "btime" => limits.time[BLACK.0 as usize] =
-                iter.next().unwrap().parse().unwrap(),
-            "winc" => limits.inc[WHITE.0 as usize] =
-                iter.next().unwrap().parse().unwrap(),
-            "binc" => limits.inc[BLACK.0 as usize] =
-                iter.next().unwrap().parse().unwrap(),
-            "movestogo" => limits.movestogo =
-                iter.next().unwrap().parse().unwrap(),
+            "wtime" => limits.time[WHITE.0 as usize] = iter.next().unwrap().parse().unwrap(),
+            "btime" => limits.time[BLACK.0 as usize] = iter.next().unwrap().parse().unwrap(),
+            "winc" => limits.inc[WHITE.0 as usize] = iter.next().unwrap().parse().unwrap(),
+            "binc" => limits.inc[BLACK.0 as usize] = iter.next().unwrap().parse().unwrap(),
+            "movestogo" => limits.movestogo = iter.next().unwrap().parse().unwrap(),
             "depth" => limits.depth = iter.next().unwrap().parse().unwrap(),
             "nodes" => limits.nodes = iter.next().unwrap().parse().unwrap(),
-            "movetime" => limits.movetime =
-                iter.next().unwrap().parse().unwrap(),
+            "movetime" => limits.movetime = iter.next().unwrap().parse().unwrap(),
             "mate" => limits.mate = iter.next().unwrap().parse().unwrap(),
             "perft" => limits.perft = iter.next().unwrap().parse().unwrap(),
             "infinite" => limits.infinite = true,
@@ -135,12 +128,11 @@ fn bench(pos: &mut Position, pos_data: &Arc<RwLock<PosData>>, args: &str) {
     let mut nodes = 0;
     for cmd in list.iter() {
         let cmd_slice: &str = &cmd;
-        let (token, args) =
-            if let Some(idx) = cmd_slice.find(char::is_whitespace) {
-                cmd_slice.split_at(idx)
-            } else {
-                (cmd_slice, "")
-            };
+        let (token, args) = if let Some(idx) = cmd_slice.find(char::is_whitespace) {
+            cmd_slice.split_at(idx)
+        } else {
+            (cmd_slice, "")
+        };
         let args = args.trim();
         if token == "go" {
             eprintln!("\nPosition: {}/{}", cnt, num);
@@ -158,14 +150,18 @@ fn bench(pos: &mut Position, pos_data: &Arc<RwLock<PosData>>, args: &str) {
     }
 
     let duration = now.elapsed();
-    let elapsed = (duration.as_secs() as u64) * 1000
-        + (duration.subsec_nanos() as u64) / 10000000 + 1;
+    let elapsed =
+        (duration.as_secs() as u64) * 1000 + (duration.subsec_nanos() as u64) / 10000000 + 1;
 
-    eprintln!("\n===========================\
+    eprintln!(
+        "\n===========================\
         \nTotal time (ms) : {}\
         \nNode searched   : {}\
         \nNodes/second    : {}",
-        elapsed, nodes, 1000 * nodes / elapsed);
+        elapsed,
+        nodes,
+        1000 * nodes / elapsed
+    );
 }
 
 // cmd_loop() waits for a command from stdin, parses it and calls the
@@ -201,12 +197,11 @@ pub fn cmd_loop() {
             }
         }
         let cmd_slice = cmd.trim();
-        let (token, args) =
-            if let Some(idx) = cmd_slice.find(char::is_whitespace) {
-                cmd_slice.split_at(idx)
-            } else {
-                (cmd_slice, "")
-            };
+        let (token, args) = if let Some(idx) = cmd_slice.find(char::is_whitespace) {
+            cmd_slice.split_at(idx)
+        } else {
+            (cmd_slice, "")
+        };
         let args = args.trim();
 
         // The GUI sends 'ponderhit' to tell us the user has played the
@@ -232,15 +227,14 @@ pub fn cmd_loop() {
             }
             "setoption" => setoption(args),
             "go" => go(&mut pos, &pos_data, args),
-            "position" =>
-                position(&mut pos, &mut pos_data.write().unwrap(), args),
+            "position" => position(&mut pos, &mut pos_data.write().unwrap(), args),
             "ucinewgame" => search::clear(),
             "isready" => println!("readyok"),
 
             // Additional custom non-UCI commands
             "bench" => bench(&mut pos, &pos_data, args),
             "d" => pos.print(),
-            _ => println!("Unknown command: {} {}", cmd, args)
+            _ => println!("Unknown command: {} {}", cmd, args),
         }
         if env::args().len() > 1 || token == "quit" {
             // Command-line args are one-shot
@@ -265,8 +259,11 @@ pub fn value(v: Value) -> String {
         s.push_str(&(v * 100 / PawnValueEg).to_string());
     } else {
         s.push_str("mate ");
-        let mut dtm = if v > Value::ZERO { (Value::MATE - v).0 + 1 }
-            else { (-Value::MATE - v).0 };
+        let mut dtm = if v > Value::ZERO {
+            (Value::MATE - v).0 + 1
+        } else {
+            (-Value::MATE - v).0
+        };
         dtm /= 2;
         s.push_str(&dtm.to_string());
     }
@@ -309,8 +306,12 @@ pub fn move_str(m: Move, chess960: bool) -> String {
     move_str.push_str(&square(to));
 
     if m.move_type() == PROMOTION {
-        move_str.push(" pnbrqk".chars().nth(m.promotion_type().0 as usize)
-            .unwrap());
+        move_str.push(
+            " pnbrqk"
+                .chars()
+                .nth(m.promotion_type().0 as usize)
+                .unwrap(),
+        );
     }
 
     move_str
@@ -320,8 +321,7 @@ pub fn move_str(m: Move, chess960: bool) -> String {
 // (g1f3, a7a8q) to the corresponding legal Move, if any.
 
 pub fn to_move(pos: &Position, s: &str) -> Move {
-    if s.len() == 5 {
-    }
+    if s.len() == 5 {}
 
     for m in MoveList::new::<Legal>(pos) {
         if s == move_str(m, pos.is_chess960()) {

@@ -1,7 +1,10 @@
 [package]
 name = "rustfish"
 version = "0.1.0"
-authors = ["Syzygy"]
+authors = ["Syzygy", "SnowballSH"]
 
 [dependencies]
 memmap = "0.6.2"
+
+[features]
+use_bmi2 = []
