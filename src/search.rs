@@ -166,8 +166,7 @@ fn futility_margin(d: Depth, improving: bool) -> Value {
     Value((175 - 50 * improving as i32) * d / ONE_PLY)
 }
 
-const RAZOR_MARGIN1: i32 = 590;
-const RAZOR_MARGIN2: i32 = 604;
+const RAZOR_MARGIN: [i32; 3] = [0, 590, 604];
 
 // Futility and reductions lookup tables, initialized at startup
 static mut FUTILITY_MOVE_COUNTS: [[i32; 16]; 2] = [[0; 16]; 2];
@@ -598,7 +597,7 @@ pub fn thread_search(pos: &mut Position, _th: &threads::ThreadCtrl) {
                 let improving_factor =
                     std::cmp::max(246, std::cmp::min(832, 306 + 119 * f[0] - 6 * f[1]));
 
-                let mut unstable_pv_factor = 1. + pos.best_move_changes;
+                let mut best_move_instability = 1. + pos.best_move_changes;
 
                 // if the best_move is stable over several iterations, reduce
                 // time for this move, the longer the move has been stable,
@@ -609,12 +608,13 @@ pub fn thread_search(pos: &mut Position, _th: &threads::ThreadCtrl) {
                     if last_best_move_depth * i < pos.completed_depth {
                         time_reduction *= 1.25;
                     }
-                    unstable_pv_factor *= pos.previous_time_reduction.powf(0.528) / time_reduction;
+                    best_move_instability *=
+                        pos.previous_time_reduction.powf(0.528) / time_reduction;
 
                     if pos.root_moves.len() == 1
                         || (timeman::elapsed() as f64)
                             > (timeman::optimum() as f64)
-                                * unstable_pv_factor
+                                * best_move_instability
                                 * (improving_factor as f64)
                                 / 581.0
                     {
@@ -650,6 +650,11 @@ fn search<NT: NodeType>(
     cut_node: bool,
     skip_early_pruning: bool,
 ) -> Value {
+    // Use quiescence search when needed
+    if depth < ONE_PLY {
+        return qsearch::<NT>(pos, ss, alpha, beta, Depth::ZERO);
+    }
+
     let pv_node = NT::NT == Pv::NT;
     let root_node = pv_node && ss[5].ply == 0;
 
@@ -674,7 +679,7 @@ fn search<NT: NodeType>(
     // Check for the available remaining time
     pos.calls_cnt -= 1;
     if pos.calls_cnt < 0 {
-        pos.calls_cnt = 4095;
+        pos.calls_cnt = 1023;
         update_counters(pos);
         check_time();
     }
@@ -868,7 +873,7 @@ fn search<NT: NodeType>(
         let eval;
         if in_check {
             ss[5].static_eval = Value::NONE;
-            improving = true;
+            improving = false;
             break; // goto moves_loop;
         } else if tt_hit {
             // Never assume anything about values stored in TT
@@ -916,14 +921,14 @@ fn search<NT: NodeType>(
         }
 
         // Step 7. Razoring (skipped when in check)
-        if !pv_node && depth <= ONE_PLY {
-            if eval + RAZOR_MARGIN1 <= alpha {
-                return qsearch::<NonPv, False>(pos, ss, alpha, alpha + 1, Depth::ZERO);
-            }
-        } else if !pv_node && depth <= 2 * ONE_PLY && eval + RAZOR_MARGIN2 <= alpha {
-            let ralpha = alpha - RAZOR_MARGIN2;
-            let v = qsearch::<NonPv, False>(pos, ss, ralpha, ralpha + 1, Depth::ZERO);
-            if v <= ralpha {
+        if !pv_node
+            && depth <= 2 * ONE_PLY
+            && eval <= alpha - Value(RAZOR_MARGIN[(depth / ONE_PLY) as usize])
+        {
+            let ralpha =
+                alpha - Value((depth != ONE_PLY) as i32 * RAZOR_MARGIN[(depth / ONE_PLY) as usize]);
+            let v = qsearch::<NonPv>(pos, ss, ralpha, ralpha + 1, Depth::ZERO);
+            if depth == ONE_PLY || v <= alpha {
                 return v;
             }
         }
@@ -955,19 +960,15 @@ fn search<NT: NodeType>(
             ss[5].cont_history = pos.cont_history.get(NO_PIECE, Square(0));
 
             pos.do_null_move();
-            let mut null_value = if depth - r < ONE_PLY {
-                -qsearch::<NonPv, False>(pos, &mut ss[1..], -beta, -beta + 1, Depth::ZERO)
-            } else {
-                -search::<NonPv>(
-                    pos,
-                    &mut ss[1..],
-                    -beta,
-                    -beta + 1,
-                    depth - r,
-                    !cut_node,
-                    true,
-                )
-            };
+            let mut null_value = -search::<NonPv>(
+                pos,
+                &mut ss[1..],
+                -beta,
+                -beta + 1,
+                depth - r,
+                !cut_node,
+                true,
+            );
             pos.undo_null_move();
 
             if null_value >= beta {
@@ -985,11 +986,7 @@ fn search<NT: NodeType>(
                 // first part of the remaining search tree
                 pos.nmp_ply = ss[5].ply + 3 * (depth - r) / (4 * ONE_PLY);
                 pos.nmp_odd = ss[5].ply & 1;
-                let v = if depth - r < ONE_PLY {
-                    qsearch::<NonPv, False>(pos, ss, beta - 1, beta, Depth::ZERO)
-                } else {
-                    search::<NonPv>(pos, ss, beta - 1, beta, depth - r, false, true)
-                };
+                let v = search::<NonPv>(pos, ss, beta - 1, beta, depth - r, false, true);
                 pos.nmp_odd = 0;
                 pos.nmp_ply = 0;
                 if v >= beta {
@@ -1003,12 +1000,12 @@ fn search<NT: NodeType>(
         // value much above beta, we can (almost) safely prune the previous
         // move.
         if !pv_node && depth >= 5 * ONE_PLY && beta.abs() < Value::MATE_IN_MAX_PLY {
-            let rbeta = std::cmp::min(beta + 200, Value::INFINITE);
+            let rbeta = std::cmp::min(beta + 216 - 48 * improving as i32, Value::INFINITE);
 
             debug_assert!(ss[4].current_move.is_ok());
 
             let mut mp = MovePickerPC::new(pos, tt_move, rbeta - ss[5].static_eval);
-            let mut prob_cut_count = depth / ONE_PLY - 3;
+            let mut prob_cut_count = 3;
             loop {
                 let m = mp.next_move(pos);
                 if m == Move::NONE {
@@ -1021,23 +1018,12 @@ fn search<NT: NodeType>(
                     let gives_check = pos.gives_check(m);
                     pos.do_move(m, gives_check);
 
-                    // Perform a preliminary search at depth 1 to verify that
-                    // the move holds. Skip if depth is 5 to avoid two searches
-                    // at depth 1 in a row.
-                    let mut value = Value::ZERO; // to prevent warning
-                    if depth != 5 * ONE_PLY {
-                        value = -search::<NonPv>(
-                            pos,
-                            &mut ss[1..],
-                            -rbeta,
-                            -rbeta + 1,
-                            ONE_PLY,
-                            !cut_node,
-                            true,
-                        );
-                    }
+                    // Perform a preliminary qsearch to verify that the move holds
+                    let mut value =
+                        -qsearch::<NonPv>(pos, &mut ss[1..], -rbeta, -rbeta + 1, Depth::ZERO);
 
-                    if depth == 5 * ONE_PLY || value >= rbeta {
+                    // If the qsearch held perform the regular search
+                    if value >= rbeta {
                         value = -search::<NonPv>(
                             pos,
                             &mut ss[1..],
@@ -1322,23 +1308,15 @@ fn search<NT: NodeType>(
 
         // Step 17. Full depth search if LMR is skipped or fails high
         if do_full_depth_search {
-            value = if new_depth < ONE_PLY {
-                if gives_check {
-                    -qsearch::<NonPv, True>(pos, &mut ss[1..], -(alpha + 1), -alpha, Depth::ZERO)
-                } else {
-                    -qsearch::<NonPv, False>(pos, &mut ss[1..], -(alpha + 1), -alpha, Depth::ZERO)
-                }
-            } else {
-                -search::<NonPv>(
-                    pos,
-                    &mut ss[1..],
-                    -(alpha + 1),
-                    -alpha,
-                    new_depth,
-                    !cut_node,
-                    false,
-                )
-            }
+            value = -search::<NonPv>(
+                pos,
+                &mut ss[1..],
+                -(alpha + 1),
+                -alpha,
+                new_depth,
+                !cut_node,
+                false,
+            );
         }
 
         // For PV nodes only, do a full PV search on the first move or after a
@@ -1348,15 +1326,7 @@ fn search<NT: NodeType>(
         if pv_node && (move_count == 1 || (value > alpha && (root_node || value < beta))) {
             ss[6].pv.truncate(0);
 
-            value = if new_depth < ONE_PLY {
-                if gives_check {
-                    -qsearch::<Pv, True>(pos, &mut ss[1..], -beta, -alpha, Depth::ZERO)
-                } else {
-                    -qsearch::<Pv, False>(pos, &mut ss[1..], -beta, -alpha, Depth::ZERO)
-                }
-            } else {
-                -search::<Pv>(pos, &mut ss[1..], -beta, -alpha, new_depth, false, false)
-            }
+            value = -search::<Pv>(pos, &mut ss[1..], -beta, -alpha, new_depth, false, false);
         }
 
         // Step 18. Undo move
@@ -1515,17 +1485,16 @@ fn search<NT: NodeType>(
 // qsearch() is the quiescence search function, which is called by the main
 // search function with depth zero or recursively with depth less than ONE_PLY.
 
-fn qsearch<NT: NodeType, InCheck: Bool>(
+fn qsearch<NT: NodeType>(
     pos: &mut Position,
     ss: &mut [Stack],
     mut alpha: Value,
     beta: Value,
     depth: Depth,
 ) -> Value {
-    let in_check = InCheck::BOOL;
+    let in_check = pos.checkers().0 != 0;
     let pv_node = NT::NT == Pv::NT;
 
-    debug_assert!(in_check == (pos.checkers() != 0));
     debug_assert!(alpha >= -Value::INFINITE && alpha < beta && beta <= Value::INFINITE);
     debug_assert!(pv_node || (alpha == beta - 1));
     debug_assert!(depth <= Depth::ZERO);
@@ -1707,11 +1676,7 @@ fn qsearch<NT: NodeType, InCheck: Bool>(
 
         // Make and search the move
         pos.do_move(m, gives_check);
-        let value = if gives_check {
-            -qsearch::<NT, True>(pos, &mut ss[1..], -beta, -alpha, depth - ONE_PLY)
-        } else {
-            -qsearch::<NT, False>(pos, &mut ss[1..], -beta, -alpha, depth - ONE_PLY)
-        };
+        let value = -qsearch::<NT>(pos, &mut ss[1..], -beta, -alpha, depth - ONE_PLY);
         pos.undo_move(m);
 
         debug_assert!(value > -Value::INFINITE && value < Value::INFINITE);
@@ -1982,7 +1947,7 @@ fn print_pv(pos: &mut Position, depth: Depth, alpha: Value, beta: Value) {
         for &m in pos.root_moves[i].pv.iter() {
             print!(" {}", uci::move_str(m, pos.is_chess960()));
         }
-        println!("");
+        println!();
     }
     stdout().flush().unwrap();
 }

@@ -73,12 +73,12 @@ struct EvalInfo<'a> {
     /// same elements in the king_attack_weights array.
     king_attackers_weight: [i32; 2],
 
-    /// king_adjacent_zone_attacks_count[Color] is the number of attacks by
+    /// king_attacks_count[Color] is the number of attacks by
     /// the given color to squares directly adjacent to the enemy king. Pieces
     /// which attack more than one square are counted multiple times. For
     /// instances, if there is a white knight of g5 and black's king is on g8,
     /// this white knight adds 2 to kind_adjacent_zone_attackscount[WHITE].
-    king_adjacent_zone_attacks_count: [i32; 2],
+    king_attacks_count: [i32; 2],
 }
 
 impl<'a> EvalInfo<'a> {
@@ -93,7 +93,7 @@ impl<'a> EvalInfo<'a> {
             king_ring: [Bitboard(0); 2],
             king_attackers_count: [0; 2],
             king_attackers_weight: [0; 2],
-            king_adjacent_zone_attacks_count: [0; 2],
+            king_attacks_count: [0; 2],
         }
     }
 }
@@ -323,7 +323,7 @@ const KING_PROTECTOR: [Score; 4] = [s!(-3, -5), s!(-4, -3), s!(-3, 0), s!(-1, 1)
 /// Assorted bonuses and penalties used by evaluation
 const MINOR_BEHIND_PAWN: Score = s!(16, 0);
 const BISHOP_PAWNS: Score = s!(8, 12);
-const LONG_RANGED_BISHOP: Score = s!(22, 0);
+const LONG_DIAGONAL_BISHOP: Score = s!(22, 0);
 const ROOK_ON_PAWN: Score = s!(8, 24);
 const TRAPPED_ROOK: Score = s!(92, 0);
 const WEAK_QUEEN: Score = s!(50, 10);
@@ -337,7 +337,7 @@ const THREAT_BY_PAWN_PUSH: Score = s!(47, 26);
 const THREAT_BY_SLIDER_ON_QUEEN: Score = s!(42, 21);
 const HINDER_PASSED_PAWN: Score = s!(8, 1);
 const KNIGHT_ON_QUEEN: Score = s!(21, 11);
-const TRAPPED_BISHOP_A1H1: Score = s!(50, 50);
+const CORNERED_BISHOP: Score = s!(50, 50);
 const CONNECTIVITY: Score = s!(3, 1);
 
 /// king_attack_weights[PieceType] contains king attack weights by piece
@@ -392,7 +392,7 @@ fn initialize<Us: ColorTrait>(pos: &Position, ei: &mut EvalInfo) {
         }
 
         ei.king_attackers_count[them.0 as usize] = popcount(b & ei.pe.pawn_attacks(them)) as i32;
-        ei.king_adjacent_zone_attacks_count[them.0 as usize] = 0;
+        ei.king_attacks_count[them.0 as usize] = 0;
         ei.king_attackers_weight[them.0 as usize] = 0;
     } else {
         ei.king_ring[us.0 as usize] = Bitboard(0);
@@ -441,7 +441,7 @@ fn evaluate_pieces<Us: ColorTrait, Pt: PieceTypeTrait>(pos: &Position, ei: &mut 
         if b & ei.king_ring[them.0 as usize] != 0 {
             ei.king_attackers_count[us.0 as usize] += 1;
             ei.king_attackers_weight[us.0 as usize] += KING_ATTACK_WEIGHTS[pt.0 as usize];
-            ei.king_adjacent_zone_attacks_count[us.0 as usize] +=
+            ei.king_attacks_count[us.0 as usize] +=
                 popcount(b & ei.attacked_by[them.0 as usize][KING.0 as usize]) as i32;
         }
 
@@ -480,7 +480,7 @@ fn evaluate_pieces<Us: ColorTrait, Pt: PieceTypeTrait>(pos: &Position, ei: &mut 
                 // Bonus for bishop on a long diagonal with can "see" both
                 // center squares
                 if more_than_one(CENTER & (attacks_bb(BISHOP, s, pos.pieces_p(PAWN)) | s)) {
-                    score += LONG_RANGED_BISHOP;
+                    score += LONG_DIAGONAL_BISHOP;
                 }
             }
 
@@ -494,11 +494,11 @@ fn evaluate_pieces<Us: ColorTrait, Pt: PieceTypeTrait>(pos: &Position, ei: &mut 
                 let d = pawn_push(us) + (if s.file() == FILE_A { EAST } else { WEST });
                 if pos.piece_on(s + d) == Piece::make(us, PAWN) {
                     score -= if !pos.empty(s + d + pawn_push(us)) {
-                        TRAPPED_BISHOP_A1H1 * 4
+                        CORNERED_BISHOP * 4
                     } else if pos.piece_on(s + 2 * d) == Piece::make(us, PAWN) {
-                        TRAPPED_BISHOP_A1H1 * 2
+                        CORNERED_BISHOP * 2
                     } else {
-                        TRAPPED_BISHOP_A1H1
+                        CORNERED_BISHOP
                     }
                 }
             }
@@ -618,7 +618,7 @@ fn evaluate_king<Us: ColorTrait>(pos: &Position, ei: &mut EvalInfo) -> Score {
 
         king_danger += ei.king_attackers_count[them.0 as usize]
             * ei.king_attackers_weight[them.0 as usize]
-            + 102 * ei.king_adjacent_zone_attacks_count[them.0 as usize]
+            + 102 * ei.king_attacks_count[them.0 as usize]
             + 191 * popcount(ei.king_ring[us.0 as usize] & weak) as i32
             + 143 * popcount(pinned | unsafe_checks) as i32
             - 848 * (pos.count(them, QUEEN) == 0) as i32
@@ -942,7 +942,9 @@ fn evaluate_initiative(pos: &Position, ei: &EvalInfo, eg: Value) -> Score {
     // Compute the initiative bonus for the attacking side
     let initiative = 8 * (ei.pe.pawn_asymmetry() + king_distance - 17)
         + 12 * (pos.count(WHITE, PAWN) + pos.count(BLACK, PAWN))
-        + 16 * (both_flanks as i32);
+        + 16 * (both_flanks as i32)
+        + 48 * (pos.non_pawn_material().0 == 0) as i32
+        - 136;
 
     // Now apply the bonus: note that we find the attacking side by extracting
     // the sign of the endgame value and that we carefully cap the bonus so

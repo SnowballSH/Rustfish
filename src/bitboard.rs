@@ -11,13 +11,6 @@ use uci;
 pub struct Bitboard(pub u64);
 
 #[inline]
-#[cfg(all(target_arch = "x86_64", feature = "use_bmi2"))]
-pub fn popcount(bb: Bitboard) -> u32 {
-    (unsafe { std::arch::x86_64::_popcnt64(bb.0 as i64) }) as u32
-}
-
-#[inline]
-#[cfg(not(all(target_arch = "x86_64", feature = "use_bmi2")))]
 pub fn popcount(bb: Bitboard) -> u32 {
     bb.0.count_ones()
 }
@@ -393,28 +386,12 @@ pub fn more_than_one(b: Bitboard) -> bool {
 }
 
 #[inline]
-#[cfg(all(target_arch = "x86_64", feature = "use_bmi2"))]
-pub fn lsb(b: Bitboard) -> Square {
-    debug_assert!(b != 0);
-    Square(unsafe { std::arch::x86_64::_tzcnt_u64(b.0) } as u32)
-}
-
-#[inline]
-#[cfg(not(all(target_arch = "x86_64", feature = "use_bmi2")))]
 pub fn lsb(b: Bitboard) -> Square {
     debug_assert!(b != 0);
     Square(u64::trailing_zeros(b.0))
 }
 
 #[inline]
-#[cfg(all(target_arch = "x86_64", feature = "use_bmi2"))]
-pub fn msb(b: Bitboard) -> Square {
-    debug_assert!(b != 0);
-    Square((63 ^ unsafe { std::arch::x86_64::_lzcnt_u64(b.0) }) as u32)
-}
-
-#[inline]
-#[cfg(not(all(target_arch = "x86_64", feature = "use_bmi2")))]
 pub fn msb(b: Bitboard) -> Square {
     debug_assert!(b != 0);
     Square(63 ^ u64::leading_zeros(b.0))

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+use std::cell::Cell;
+
 use movegen::*;
 use position::Position;
 use search;
 use types::*;
-
-use std::cell::Cell;
 
 pub struct ButterflyHistory {
     v: [[Cell<i16>; 4096]; 2],
@@ -106,8 +106,7 @@ pub struct MovePicker {
     stage: i32,
     depth: Depth,
     tt_move: Move,
-    countermove: Move,
-    killers: [Move; 2],
+    refutations: [Move; 3],
     cmh: [&'static PieceToHistory; 3],
     list: [ExtMove; MAX_MOVES as usize],
 }
@@ -248,10 +247,13 @@ impl MovePicker {
             cur: 0,
             end_moves: 0,
             end_bad_captures: 0,
-            stage: stage,
+            stage,
             tt_move: ttm,
-            countermove: pos.counter_moves.get(pos.piece_on(prev_sq), prev_sq),
-            killers: [ss[5].killers[0], ss[5].killers[1]],
+            refutations: [
+                ss[5].killers[0],
+                ss[5].killers[1],
+                pos.counter_moves.get(pos.piece_on(prev_sq), prev_sq),
+            ],
             depth: d,
             cmh: [ss[4].cont_history, ss[3].cont_history, ss[1].cont_history],
             list: [ExtMove {
@@ -291,7 +293,15 @@ impl MovePicker {
                         }
                     }
                     self.stage += 1;
-                    let m = self.killers[0];
+                    let m = self.refutations[0];
+
+                    // If the countermove is the same as a killer, skip it
+                    if self.refutations[0] == self.refutations[2]
+                        || self.refutations[1] == self.refutations[2]
+                    {
+                        self.refutations[2] = Move::NONE;
+                    }
+
                     if m != Move::NONE
                         && m != self.tt_move
                         && pos.pseudo_legal(m)
@@ -303,7 +313,7 @@ impl MovePicker {
 
                 KILLERS => {
                     self.stage += 1;
-                    let m = self.killers[1];
+                    let m = self.refutations[1];
                     if m != Move::NONE
                         && m != self.tt_move
                         && pos.pseudo_legal(m)
@@ -315,11 +325,9 @@ impl MovePicker {
 
                 COUNTERMOVE => {
                     self.stage += 1;
-                    let m = self.countermove;
+                    let m = self.refutations[2];
                     if m != Move::NONE
                         && m != self.tt_move
-                        && m != self.killers[0]
-                        && m != self.killers[1]
                         && pos.pseudo_legal(m)
                         && !pos.capture(m)
                     {
@@ -344,9 +352,9 @@ impl MovePicker {
                             let m = self.list[self.cur].m;
                             self.cur += 1;
                             if m != self.tt_move
-                                && m != self.killers[0]
-                                && m != self.killers[1]
-                                && m != self.countermove
+                                && m != self.refutations[0]
+                                && m != self.refutations[1]
+                                && m != self.refutations[2]
                             {
                                 return m;
                             }

@@ -100,7 +100,7 @@ pub struct StateInfo {
     pub checkers_bb: Bitboard,
     pub captured_piece: Piece,
     pub blockers_for_king: [Bitboard; 2],
-    pub pinners_for_king: [Bitboard; 2],
+    pub pinners: [Bitboard; 2],
     pub check_squares: [Bitboard; 8],
 }
 
@@ -119,7 +119,7 @@ impl StateInfo {
             checkers_bb: Bitboard(0),
             captured_piece: NO_PIECE,
             blockers_for_king: [Bitboard(0); 2],
-            pinners_for_king: [Bitboard(0); 2],
+            pinners: [Bitboard(0); 2],
             check_squares: [Bitboard(0); 8],
         }
     }
@@ -138,7 +138,7 @@ impl StateInfo {
             checkers_bb: Bitboard(0),
             captured_piece: NO_PIECE,
             blockers_for_king: [Bitboard(0); 2],
-            pinners_for_king: [Bitboard(0); 2],
+            pinners: [Bitboard(0); 2],
             check_squares: [Bitboard(0); 8],
         }
     }
@@ -356,8 +356,8 @@ impl Position {
         self.st().blockers_for_king[c.0 as usize]
     }
 
-    pub fn pinners_for_king(&self, c: Color) -> Bitboard {
-        self.st().pinners_for_king[c.0 as usize]
+    pub fn pinners(&self, c: Color) -> Bitboard {
+        self.st().pinners[c.0 as usize]
     }
 
     pub fn check_squares(&self, pt: PieceType) -> Bitboard {
@@ -651,10 +651,10 @@ impl Position {
         let mut pinners = Bitboard(0);
         self.st_mut().blockers_for_king[WHITE.0 as usize] =
             self.slider_blockers(self.pieces_c(BLACK), self.square(WHITE, KING), &mut pinners);
-        self.st_mut().pinners_for_king[WHITE.0 as usize] = pinners;
+        self.st_mut().pinners[WHITE.0 as usize] = pinners;
         self.st_mut().blockers_for_king[BLACK.0 as usize] =
             self.slider_blockers(self.pieces_c(WHITE), self.square(BLACK, KING), &mut pinners);
-        self.st_mut().pinners_for_king[BLACK.0 as usize] = pinners;
+        self.st_mut().pinners[BLACK.0 as usize] = pinners;
 
         let ksq = self.square(!self.side_to_move(), KING);
 
@@ -1405,9 +1405,7 @@ impl Position {
             if stm_attackers == 0 {
                 break;
             }
-            if stm_attackers & self.blockers_for_king(stm) != 0
-                && self.pinners_for_king(stm) & !occ == 0
-            {
+            if stm_attackers & self.blockers_for_king(stm) != 0 && self.pinners(stm) & !occ == 0 {
                 stm_attackers &= !self.blockers_for_king(stm);
             }
             if stm_attackers == 0 {

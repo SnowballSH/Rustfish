@@ -91,7 +91,7 @@ fn is_kxk(pos: &Position, us: Color) -> bool {
     !more_than_one(pos.pieces_c(!us)) && pos.non_pawn_material_c(us) >= RookValueMg
 }
 
-fn is_kbpsks(pos: &Position, us: Color) -> bool {
+fn is_kbpsk(pos: &Position, us: Color) -> bool {
     pos.non_pawn_material_c(us) == BishopValueMg
         && pos.count(us, BISHOP) == 1
         && pos.count(us, PAWN) >= 1
@@ -197,7 +197,7 @@ pub fn probe(pos: &Position) -> &'static mut Entry {
     // generic ones that refer to more than one material distributiion.
     // Note that in this case we don't return after setting the function.
     for &c in [WHITE, BLACK].iter() {
-        if is_kbpsks(pos, c) {
+        if is_kbpsk(pos, c) {
             e.scaling_function[c.0 as usize] = Some(scale_kbpsk);
         } else if is_kqkrps(pos, c) {
             e.scaling_function[c.0 as usize] = Some(scale_kqkrps);
