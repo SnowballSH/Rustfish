@@ -130,24 +130,26 @@ pub struct MovePickerPC {
     list: [ExtMove; MAX_MOVES as usize],
 }
 
-const MAIN_SEARCH: i32 = 0;
-const CAPTURES_INIT: i32 = 1;
+const MAIN_TT: i32 = 0;
+const CAPTURE_INIT: i32 = 1;
 const GOOD_CAPTURES: i32 = 2;
 const KILLERS: i32 = 3;
 const COUNTERMOVE: i32 = 4;
 const QUIET_INIT: i32 = 5;
 const QUIET: i32 = 6;
-const BAD_CAPTURES: i32 = 7;
-const EVASION: i32 = 8;
-const EVASIONS_INIT: i32 = 9;
-const ALL_EVASIONS: i32 = 10;
-const PROBCUT: i32 = 11;
+const BAD_CAPTURE: i32 = 7;
+const EVASION_TT: i32 = 8;
+const EVASION_INIT: i32 = 9;
+const EVASION: i32 = 10;
+const PROBCUT_TT: i32 = 11;
 const PROBCUT_INIT: i32 = 12;
-const PROBCUT_CAPTURES: i32 = 13;
-const QSEARCH: i32 = 14;
-const QCAPTURES_INIT: i32 = 15;
-const QCAPTURES: i32 = 16;
-const QCHECKS: i32 = 17;
+const PROBCUT: i32 = 13;
+const QSEARCH_TT: i32 = 14;
+const QCAPTURE_INIT: i32 = 15;
+const QCAPTURE: i32 = 16;
+const QCHECK_INIT: i32 = 17;
+const QCHECK: i32 = 18;
+
 
 // partial_insertion_sort() sorts moves in descending order up to and
 // including a given limit.
@@ -193,10 +195,10 @@ fn score_captures(pos: &Position, list: &mut [ExtMove]) {
     for m in list.iter_mut() {
         m.value = piece_value(MG, pos.piece_on(m.m.to())).0
             + pos.capture_history.get(
-                pos.moved_piece(m.m),
-                m.m.to(),
-                pos.piece_on(m.m.to()).piece_type(),
-            );
+            pos.moved_piece(m.m),
+            m.m.to(),
+            pos.piece_on(m.m.to()).piece_type(),
+        );
     }
 }
 
@@ -230,9 +232,9 @@ fn score_evasions(pos: &Position, list: &mut [ExtMove]) {
 impl MovePicker {
     pub fn new(pos: &Position, ttm: Move, d: Depth, ss: &[search::Stack]) -> MovePicker {
         let mut stage = if pos.checkers() != 0 {
-            EVASION
+            EVASION_TT
         } else {
-            MAIN_SEARCH
+            MAIN_TT
         };
         let tt_move = if ttm != Move::NONE && pos.pseudo_legal(ttm) {
             ttm
@@ -266,12 +268,12 @@ impl MovePicker {
     pub fn next_move(&mut self, pos: &Position, skip_quiets: bool) -> Move {
         loop {
             match self.stage {
-                MAIN_SEARCH | EVASION => {
+                MAIN_TT | EVASION_TT => {
                     self.stage += 1;
                     return self.tt_move;
                 }
 
-                CAPTURES_INIT => {
+                CAPTURE_INIT => {
                     self.end_moves = generate::<Captures>(pos, &mut self.list, 0);
                     score_captures(pos, &mut self.list[..self.end_moves]);
                     self.stage += 1;
@@ -364,7 +366,7 @@ impl MovePicker {
                     self.cur = 0; // Point to beginning of bad captures
                 }
 
-                BAD_CAPTURES => {
+                BAD_CAPTURE => {
                     if self.cur < self.end_bad_captures {
                         let m = self.list[self.cur].m;
                         self.cur += 1;
@@ -373,14 +375,14 @@ impl MovePicker {
                     break;
                 }
 
-                EVASIONS_INIT => {
+                EVASION_INIT => {
                     self.cur = 0;
                     self.end_moves = generate::<Evasions>(pos, &mut self.list, 0);
                     score_evasions(pos, &mut self.list[..self.end_moves]);
                     self.stage += 1;
                 }
 
-                ALL_EVASIONS => {
+                EVASION => {
                     while self.cur < self.end_moves {
                         let m = pick_best(&mut self.list[self.cur..self.end_moves]);
                         self.cur += 1;
@@ -404,9 +406,9 @@ impl MovePicker {
 impl MovePickerQ {
     pub fn new(pos: &Position, ttm: Move, d: Depth, s: Square) -> MovePickerQ {
         let mut stage = if pos.checkers() != 0 {
-            EVASION
+            EVASION_TT
         } else {
-            QSEARCH
+            QSEARCH_TT
         };
         let tt_move = if ttm != Move::NONE
             && pos.pseudo_legal(ttm)
@@ -435,19 +437,19 @@ impl MovePickerQ {
     pub fn next_move(&mut self, pos: &Position) -> Move {
         loop {
             match self.stage {
-                EVASION | QSEARCH => {
+                EVASION_TT | QSEARCH_TT => {
                     self.stage += 1;
                     return self.tt_move;
                 }
 
-                EVASIONS_INIT => {
+                EVASION_INIT => {
                     self.cur = 0;
                     self.end_moves = generate::<Evasions>(pos, &mut self.list, 0);
                     score_evasions(pos, &mut self.list[..self.end_moves]);
                     self.stage += 1;
                 }
 
-                ALL_EVASIONS => {
+                EVASION => {
                     while self.cur < self.end_moves {
                         let m = pick_best(&mut self.list[self.cur..self.end_moves]);
                         self.cur += 1;
@@ -458,33 +460,38 @@ impl MovePickerQ {
                     break;
                 }
 
-                QCAPTURES_INIT => {
+                QCAPTURE_INIT => {
                     self.cur = 0;
                     self.end_moves = generate::<Captures>(pos, &mut self.list, 0);
                     score_captures(pos, &mut self.list[..self.end_moves]);
                     self.stage += 1;
                 }
 
-                QCAPTURES => {
+                QCAPTURE => {
                     while self.cur < self.end_moves {
                         let m = pick_best(&mut self.list[self.cur..self.end_moves]);
                         self.cur += 1;
                         if m != self.tt_move
                             && (self.depth > Depth::QS_RECAPTURES
-                                || m.to() == self.recapture_square)
+                            || m.to() == self.recapture_square)
                         {
                             return m;
                         }
                     }
+                    // If we did not find any move and we do not try checks, we have finished
                     if self.depth <= Depth::QS_NO_CHECKS {
-                        break;
+                        return Move::NONE;
                     }
+                    self.stage += 1;
+                }
+
+                QCHECK_INIT => {
                     self.cur = 0;
                     self.end_moves = generate::<QuietChecks>(pos, &mut self.list, 0);
                     self.stage += 1;
                 }
 
-                QCHECKS => {
+                QCHECK => {
                     while self.cur < self.end_moves {
                         let m = self.list[self.cur].m;
                         self.cur += 1;
@@ -516,10 +523,10 @@ impl MovePickerPC {
             && pos.see_ge(ttm, threshold)
         {
             tt_move = ttm;
-            stage = PROBCUT;
+            stage = PROBCUT_TT;
         } else {
             tt_move = Move::NONE;
-            stage = PROBCUT + 1;
+            stage = PROBCUT_TT + 1;
         }
 
         MovePickerPC {
@@ -538,7 +545,7 @@ impl MovePickerPC {
     pub fn next_move(&mut self, pos: &Position) -> Move {
         loop {
             match self.stage {
-                PROBCUT => {
+                PROBCUT_TT => {
                     self.stage += 1;
                     return self.tt_move;
                 }
@@ -550,7 +557,7 @@ impl MovePickerPC {
                     self.stage += 1;
                 }
 
-                PROBCUT_CAPTURES => {
+                PROBCUT => {
                     while self.cur < self.end_moves {
                         let m = pick_best(&mut self.list[self.cur..self.end_moves]);
                         self.cur += 1;

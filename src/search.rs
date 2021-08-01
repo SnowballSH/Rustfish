@@ -922,13 +922,13 @@ fn search<NT: NodeType>(
 
         // Step 7. Razoring (skipped when in check)
         if !pv_node
-            && depth <= 2 * ONE_PLY
+            && depth < 3 * ONE_PLY
             && eval <= alpha - Value(RAZOR_MARGIN[(depth / ONE_PLY) as usize])
         {
             let ralpha =
-                alpha - Value((depth != ONE_PLY) as i32 * RAZOR_MARGIN[(depth / ONE_PLY) as usize]);
+                alpha - Value((depth >= 2 * ONE_PLY) as i32 * RAZOR_MARGIN[(depth / ONE_PLY) as usize]);
             let v = qsearch::<NonPv>(pos, ss, ralpha, ralpha + 1, Depth::ZERO);
-            if depth == ONE_PLY || v <= alpha {
+            if depth < 2 * ONE_PLY || v <= alpha {
                 return v;
             }
         }
