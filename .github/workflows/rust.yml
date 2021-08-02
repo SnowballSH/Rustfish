@@ -24,7 +24,7 @@ jobs:
       - name: Build with Python
         run: |
           pip install chess
-          python ./build.py
+          python ./build.py --test
 
       - name: Copy Binary
         run: cp ./target/release/rustfish ./rustfish
