@@ -1,10 +1,10 @@
 import argparse
 import os
 
-THREADS = 4
+THREADS = 3
 
-GAMES = 7
-TIME = 60.0
+GAMES = 25
+TIME = 5.0
 INC = 0.0
 
 
@@ -12,7 +12,7 @@ def run_once(id_: int, q):
     import chess.engine
     import time
 
-    stat = [0.0, 0.0]
+    stat = [0, 0, 0]
     for g in range(GAMES):
         e1 = chess.engine.SimpleEngine.popen_uci("./target/release/rustfish")
         e2 = chess.engine.SimpleEngine.popen_uci("./rustfish")
@@ -38,6 +38,8 @@ def run_once(id_: int, q):
             # print(f"Times: {times}")
             board.push(result.move)
             times[color] += INC - (time.time() - now)
+            if times[color] <= 0.01:
+                times[color] = 0.01
             color ^= 1
 
             if 'score' in result.info:
@@ -65,22 +67,17 @@ def run_once(id_: int, q):
         print()
 
         if draw >= 3.0 or board.result() == "1/2-1/2":
-            stat[0] += 0.5
-            stat[1] += 0.5
+            stat[1] += 1
         elif board.result() == "1-0":
             if reverse:
-                stat[0] += 0
-                stat[1] += 1
+                stat[2] += 1
             else:
                 stat[0] += 1
-                stat[1] += 0
         elif board.result() == "0-1":
             if reverse:
                 stat[0] += 1
-                stat[1] += 0
             else:
-                stat[0] += 0
-                stat[1] += 1
+                stat[2] += 1
 
     q.put(stat)
 
@@ -124,11 +121,12 @@ if __name__ == "__main__":
 
             queues.append(q)
 
-        stats = [0.0, 0.0]
+        stats = [0, 0, 0]
 
         for q in queues:
             res = q.get(block=True)
             stats[0] += res[0]
             stats[1] += res[1]
+            stats[2] += res[2]
 
-        print(stats)
+        print(f"NEW VERSION: win {stats[0]} draw {stats[1]} lose {stats[2]}")

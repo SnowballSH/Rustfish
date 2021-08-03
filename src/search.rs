@@ -486,17 +486,19 @@ pub fn thread_search(pos: &mut Position, _th: &threads::ThreadCtrl) {
 
             // Reset aspiration window starting size
             if root_depth >= 5 * ONE_PLY {
+                let previous_score = pos.root_moves[pos.pv_idx].previous_score;
                 delta = Value(18);
                 alpha = std::cmp::max(
-                    pos.root_moves[pos.pv_idx].previous_score - delta,
+                    previous_score - delta,
                     -Value::INFINITE,
                 );
                 beta = std::cmp::min(
-                    pos.root_moves[pos.pv_idx].previous_score + delta,
+                    previous_score + delta,
                     Value::INFINITE,
                 );
                 let mut ct = base_ct;
-                ct += 48 * (best_value.0 as f32 / 128.0).atan().round() as i32;
+                // Adjust contempt based on root move's previousScore (dynamic contempt)
+                ct += 48 * (previous_score.0 as f32 / 128.0).atan().round() as i32;
                 let ct = Score::make(ct, ct / 2);
                 unsafe { evaluate::CONTEMPT = if us == WHITE { ct } else { -ct } }
             }

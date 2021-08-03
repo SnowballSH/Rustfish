@@ -384,11 +384,17 @@ fn initialize<Us: ColorTrait>(pos: &Position, ei: &mut EvalInfo) {
     ei.attacked_by[us.0 as usize][ALL_PIECES.0 as usize] =
         b | ei.attacked_by[us.0 as usize][PAWN.0 as usize];
 
-    // Init out king safety tables only if we are going to use them
+    // Init our king safety tables only if we are going to use them
     if pos.non_pawn_material_c(them) >= RookValueMg + KnightValueMg {
         ei.king_ring[us.0 as usize] = b;
         if pos.square(us, KING).relative_rank(us) == RANK_1 {
             ei.king_ring[us.0 as usize] |= b.shift(up);
+        }
+
+        if pos.square(us, KING).file() == FILE_H {
+            ei.king_ring[us.0 as usize] |= b.shift(WEST);
+        } else if pos.square(us, KING).file() == FILE_A {
+            ei.king_ring[us.0 as usize] |= b.shift(EAST);
         }
 
         ei.king_attackers_count[them.0 as usize] = popcount(b & ei.pe.pawn_attacks(them)) as i32;

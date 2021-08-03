@@ -474,6 +474,8 @@ impl Bitboard {
             SOUTH_EAST => (self & !FILEH_BB) >> 7,
             NORTH_WEST => (self & !FILEA_BB) << 7,
             SOUTH_WEST => (self & !FILEA_BB) >> 9,
+            EAST => (self & !FILEH_BB) << 1,
+            WEST => (self & !FILEA_BB) >> 1,
             _ => Bitboard(0),
         }
     }
