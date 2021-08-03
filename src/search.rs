@@ -168,6 +168,16 @@ fn futility_margin(d: Depth, improving: bool) -> Value {
 
 const RAZOR_MARGIN: [i32; 3] = [0, 590, 604];
 
+const CAPTURE_PRUNE_MARGIN: [i32; 7] = [
+    0,
+    1 * PawnValueEg.0 * 1055 / 1000,
+    2 * PawnValueEg.0 * 1042 / 1000,
+    3 * PawnValueEg.0 * 963 / 1000,
+    4 * PawnValueEg.0 * 1038 / 1000,
+    5 * PawnValueEg.0 * 950 / 1000,
+    6 * PawnValueEg.0 * 930 / 1000,
+];
+
 // Futility and reductions lookup tables, initialized at startup
 static mut FUTILITY_MOVE_COUNTS: [[i32; 16]; 2] = [[0; 16]; 2];
 static mut REDUCTIONS: [[[[i32; 64]; 64]; 2]; 2] = [[[[0; 64]; 64]; 2]; 2];
@@ -619,10 +629,10 @@ pub fn thread_search(pos: &mut Position, _th: &threads::ThreadCtrl) {
 
                     if pos.root_moves.len() == 1
                         || (timeman::elapsed() as f64)
-                            > (timeman::optimum() as f64)
-                                * best_move_instability
-                                * (improving_factor as f64)
-                                / 581.0
+                        > (timeman::optimum() as f64)
+                        * best_move_instability
+                        * (improving_factor as f64)
+                        / 581.0
                     {
                         // If we are allowed to ponder do not stop the search
                         // now but keep pondering until the GUI sends
@@ -824,10 +834,10 @@ fn search<NT: NodeType>(
 
                 if b == Bound::EXACT
                     || (if b == Bound::LOWER {
-                        value >= beta
-                    } else {
-                        value <= alpha
-                    })
+                    value >= beta
+                } else {
+                    value <= alpha
+                })
                 {
                     tte.save(
                         pos_key,
@@ -892,12 +902,12 @@ fn search<NT: NodeType>(
             // Can tt_value be used as a better position evaluation?
             if tt_value != Value::NONE
                 && tte.bound()
-                    & (if tt_value > tmp {
-                        Bound::LOWER
-                    } else {
-                        Bound::UPPER
-                    })
-                    != 0
+                & (if tt_value > tmp {
+                Bound::LOWER
+            } else {
+                Bound::UPPER
+            })
+                != 0
             {
                 tmp = tt_value;
             }
@@ -926,7 +936,7 @@ fn search<NT: NodeType>(
             break; // goto moves_loop;
         }
 
-        // Step 7. Razoring (skipped when in check)
+        // Step 7. Razoring (skipped when in check, ~2 Elo)
         if !pv_node
             && depth < 3 * ONE_PLY
             && eval <= alpha - Value(RAZOR_MARGIN[(depth / ONE_PLY) as usize])
@@ -939,7 +949,7 @@ fn search<NT: NodeType>(
             }
         }
 
-        // Step 8. Futility pruning: child node (skipped when in check)
+        // Step 8. Futility pruning: child node (skipped when in check, ~30 Elo)
         if !root_node
             && depth < 7 * ONE_PLY
             && eval - futility_margin(depth, improving) >= beta
@@ -948,8 +958,7 @@ fn search<NT: NodeType>(
             return eval;
         }
 
-        // Step 9. Null move search with verification search (ommitted in PV
-        // nodes)
+        // Step 9. Null move search with verification search (~40 Elo)
         if !pv_node
             && eval >= beta
             && ss[5].static_eval >= beta - 36 * depth / ONE_PLY + 225
@@ -1001,7 +1010,7 @@ fn search<NT: NodeType>(
             }
         }
 
-        // Step 10. ProbCut (skipped when in check)
+        // Step 10. ProbCut (skipped when in check, ~10 Elo)
         // If we have a good enough capture and a reduced search returns a
         // value much above beta, we can (almost) safely prune the previous
         // move.
@@ -1053,7 +1062,7 @@ fn search<NT: NodeType>(
             }
         }
 
-        // Step 11. Internal iterative deepening (skipped when in check)
+        // Step 11. Internal iterative deepening (skipped when in check, ~2 Elo)
         if depth >= 6 * ONE_PLY
             && tt_move == Move::NONE
             && (pv_node || ss[5].static_eval + 256 >= beta)
@@ -1076,14 +1085,6 @@ fn search<NT: NodeType>(
 
     let mut mp = MovePicker::new(pos, tt_move, depth, ss);
     let mut value = best_value;
-
-    let singular_extension_node = !root_node
-        && depth >= 8 * ONE_PLY
-        && tt_move != Move::NONE
-        && tt_value != Value::NONE
-        && excluded_move == Move::NONE
-        && tte.bound() & Bound::LOWER != 0
-        && tte.depth() >= depth - 3 * ONE_PLY;
 
     let mut skip_quiets = false;
     let mut tt_capture = false;
@@ -1110,8 +1111,8 @@ fn search<NT: NodeType>(
         // searched.
         if root_node
             && !pos.root_moves[pos.pv_idx..]
-                .iter()
-                .any(|ref rm| rm.pv[0] == m)
+            .iter()
+            .any(|ref rm| rm.pv[0] == m)
         {
             continue;
         }
@@ -1148,14 +1149,21 @@ fn search<NT: NodeType>(
         let move_count_pruning =
             depth < 16 * ONE_PLY && move_count >= futility_move_counts(improving, depth);
 
-        // Step 13. Singular and Gives Check Extensions
+        // Step 13. Singular and Gives Check Extensions (~70 Elo)
 
-        // Singular extension search. If all moves but one fail low on a search
+        // Singular extension search (~60 Elo). If all moves but one fail low on a search
         // of (alpha-s, beta-s), and just one fails high on (alpha, beta), then
         // that is singular and should be extended. To verify this, we do a
         // reduced search on all moves but the tt_move and if the result is
         // lower than tt_value minus a margin, we will extend the tt_move.
-        if singular_extension_node && m == tt_move && pos.legal(m) {
+        if depth >= 8 * ONE_PLY
+            && m == tt_move
+            && !root_node
+            && excluded_move == Move::NONE // Recursive singular search is not allowed
+            && tt_value != Value::NONE
+            && tte.bound() & Bound::LOWER != 0
+            && tte.depth() >= depth - 3 * ONE_PLY
+            && pos.legal(m) {
             let rbeta = std::cmp::max(tt_value - 2 * depth / ONE_PLY, -Value::MATE);
             let d = (depth / (2 * ONE_PLY)) * ONE_PLY;
             ss[5].excluded_move = m;
@@ -1166,13 +1174,14 @@ fn search<NT: NodeType>(
                 extension = ONE_PLY;
             }
         } else if gives_check && !move_count_pruning && pos.see_ge(m, Value::ZERO) {
+            // (~2 Elo)
             extension = ONE_PLY;
         }
 
         // Calculate new depth for this move
         let new_depth = depth - ONE_PLY + extension;
 
-        // Step 14. Pruning at shallow depth
+        // Step 14. Pruning at shallow depth (~170 Elo)
         if !root_node
             && pos.non_pawn_material_c(pos.side_to_move()) != Value::ZERO
             && best_value > Value::MATED_IN_MAX_PLY
@@ -1181,7 +1190,7 @@ fn search<NT: NodeType>(
                 && !gives_check
                 && (!pos.advanced_pawn_push(m) || pos.non_pawn_material() >= Value(5000))
             {
-                // Move count based pruning
+                // Move count based pruning (~30 Elo)
                 if move_count_pruning {
                     skip_quiets = true;
                     continue;
@@ -1193,7 +1202,7 @@ fn search<NT: NodeType>(
                     Depth::ZERO,
                 ) / ONE_PLY;
 
-                // Countermoves based pruning
+                // Countermoves based pruning (~20 Elo)
                 if lmr_depth < 3
                     && cont_hist.0.get(moved_piece, m.to()) < CM_THRESHOLD
                     && cont_hist.1.get(moved_piece, m.to()) < CM_THRESHOLD
@@ -1201,19 +1210,19 @@ fn search<NT: NodeType>(
                     continue;
                 }
 
-                // Futility pruning: parent node
+                // Futility pruning: parent node (~2 Elo)
                 if lmr_depth < 7 && !in_check && ss[5].static_eval + 256 + 200 * lmr_depth <= alpha
                 {
                     continue;
                 }
 
-                // Prune moves with negative SEE
+                // Prune moves with negative SEE (~10 Elo)
                 if lmr_depth < 8 && !pos.see_ge(m, Value(-35 * lmr_depth * lmr_depth)) {
                     continue;
                 }
-            } else if depth < 7 * ONE_PLY
+            } else if depth < 7 * ONE_PLY // (~20 Elo)
                 && extension == Depth::ZERO
-                && !pos.see_ge(m, -PawnValueEg * (depth / ONE_PLY))
+                && !pos.see_ge(m, -Value(CAPTURE_PRUNE_MARGIN[(depth / ONE_PLY) as usize]))
             {
                 continue;
             }
@@ -1573,12 +1582,12 @@ fn qsearch<NT: NodeType>(
             // Can tt_value be used as a better evaluation?
             if tt_value != Value::NONE
                 && tte.bound()
-                    & (if tt_value > tmp {
-                        Bound::LOWER
-                    } else {
-                        Bound::UPPER
-                    })
-                    != 0
+                & (if tt_value > tmp {
+                Bound::LOWER
+            } else {
+                Bound::UPPER
+            })
+                != 0
             {
                 best_value = tt_value;
             } else {

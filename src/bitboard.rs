@@ -439,6 +439,7 @@ pub fn file_bb(f: File) -> Bitboard {
     unsafe { FILE_BB[f as usize] }
 }
 
+/*
 /// bitboard!(A1, A2, ...) creates a bitboard with squares A1, A2, ...
 
 macro_rules! bitboard {
@@ -446,6 +447,7 @@ macro_rules! bitboard {
     ($sq:ident) => { bitboard!() | Square::$sq };
     ($sq:ident, $($sqs:ident),+) => { bitboard!($($sqs),*) | Square::$sq };
 }
+ */
 
 impl Bitboard {
     /*

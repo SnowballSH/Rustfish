@@ -3,8 +3,8 @@ import os
 
 THREADS = 3
 
-GAMES = 50
-TIME = 7.5
+GAMES = 20
+TIME = 60.0
 INC = 0.0
 
 OPENINGS = (
@@ -75,12 +75,12 @@ def run_once(id_: int, q):
 
             if 'score' in result.info:
                 if len(board.move_stack) > 80:
-                    if -10 < result.info['score'].white().score(mate_score=100000) < 10:
+                    if -5 < result.info['score'].white().score(mate_score=100000) < 5:
                         draw += 0.5
                     else:
                         draw = 0.0
 
-                if draw >= 3.0:
+                if draw >= 10.0:
                     break
 
         e1.close()
@@ -88,7 +88,7 @@ def run_once(id_: int, q):
 
         print(f"GAME {GAMES * id_ + g + 1} Finished")
 
-        if draw >= 3.0:
+        if draw >= 10.0:
             print("Adjunct Draw")
             print("1/2-1/2")
         else:
@@ -97,7 +97,7 @@ def run_once(id_: int, q):
         print(board.fen())
         print()
 
-        if draw >= 3.0 or board.result() == "1/2-1/2":
+        if draw >= 10.0 or board.result() == "1/2-1/2":
             stat[1] += 1
         elif board.result() == "1-0":
             if reverse:

@@ -673,7 +673,8 @@ fn evaluate_threats<Us: ColorTrait>(pos: &Position, ei: &EvalInfo) -> Score {
     let mut score = Score::ZERO;
 
     // Non-pawn enemies attacked by a pawn
-    let weak = (pos.pieces_c(them) ^ pos.pieces_cp(them, PAWN))
+    let non_pawn_enemies = pos.pieces_c(them) ^ pos.pieces_cp(them, PAWN);
+    let weak = non_pawn_enemies
         & ei.attacked_by[us.0 as usize][PAWN.0 as usize];
 
     if weak != 0 {
@@ -685,6 +686,16 @@ fn evaluate_threats<Us: ColorTrait>(pos: &Position, ei: &EvalInfo) -> Score {
 
         score += THREAT_BY_SAFE_PAWN * (popcount(safe_threats) as i32);
     }
+
+    /*
+    let b = pos.pieces_cp(us, PAWN)
+            & (!ei.attacked_by[them.0 as usize][ALL_PIECES.0 as usize]
+                | ei.attacked_by[us.0 as usize][ALL_PIECES.0 as usize]);
+
+    let safe_threats = (b.shift(right) | b.shift(left)) & non_pawn_enemies;
+
+    score += THREAT_BY_SAFE_PAWN * (popcount(safe_threats) as i32);
+     */
 
     // Squares strongly protected by the opponent, either because they attack
     // the square with a pawn or because they attack the square twice and
@@ -972,11 +983,7 @@ fn evaluate_scale_factor(pos: &Position, ei: &EvalInfo, eg: Value) -> ScaleFacto
             if pos.non_pawn_material_c(WHITE) == BishopValueMg
                 && pos.non_pawn_material_c(BLACK) == BishopValueMg
             {
-                return if more_than_one(pos.pieces_p(PAWN)) {
-                    ScaleFactor(31)
-                } else {
-                    ScaleFactor(9)
-                };
+                return ScaleFactor(31);
             }
 
             // Endgame with opposite-coloured bishops, but also other pieces.

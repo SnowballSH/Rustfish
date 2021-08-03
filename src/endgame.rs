@@ -788,30 +788,7 @@ fn scale_kbpkb(pos: &Position, strong_side: Color) -> ScaleFactor {
 
     // Case 2: Opposite colored bishops
     if opposite_colors(sbsq, wbsq) {
-        // We assume that the position is drawn in the following three
-        // situations:
-        //
-        //   a. The pawn is on rank 5 or further back.
-        //   b. The defending king is somewhere in the pawn's path.
-        //   c. The defending bishop attacks some square along the pawn's
-        //      path and is at least three squares away from the pawn.
-        //
-        //  These rules are probably not perfect, but in practice they work
-        //  reasonably well.
-
-        if psq.relative_rank(strong_side) <= RANK_5 {
-            return ScaleFactor::DRAW;
-        }
-
-        let path = forward_file_bb(strong_side, psq);
-
-        if path & pos.pieces_cp(weak_side, KING) != 0 {
-            return ScaleFactor::DRAW;
-        }
-
-        if pos.attacks_from(BISHOP, wbsq) & path != 0 && Square::distance(wbsq, psq) >= 3 {
-            return ScaleFactor::DRAW;
-        }
+        return ScaleFactor::DRAW;
     }
 
     ScaleFactor::NONE
