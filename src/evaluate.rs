@@ -12,10 +12,6 @@ pub const TEMPO: Value = Value(20);
 
 pub static mut CONTEMPT: Score = Score::ZERO;
 
-fn contempt() -> Score {
-    unsafe { CONTEMPT }
-}
-
 //const CENTER: Bitboard = (FILED_BB | FILEE_BB) & (RANK4_BB | RANK5_BB);
 //const QUEEN_SIDE: Bitboard = FILEA_BB | FILEB_BB | FILEC_BB | FILED_BB;
 //const CENTER_FILES: Bitboard = FILEC_BB | FILED_BB | FILEE_BB | FILEF_BB;
@@ -1018,7 +1014,13 @@ pub fn evaluate(pos: &Position) -> Value {
     // in the position object (material + piece square tables) and the
     // material imbalance. Score is computer internally from the white point
     // of view.
-    let mut score = pos.psq_score() + me.imbalance() + contempt();
+    let mut score = pos.psq_score()
+        + me.imbalance()
+        + if let Some(th) = &pos.thread_ctrl {
+            th.contempt.get()
+        } else {
+            unsafe { CONTEMPT }
+        };
 
     // Probe the pawn hash table
     let pe = pawns::probe(pos);

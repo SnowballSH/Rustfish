@@ -70,10 +70,10 @@ const STORM_DANGER: [[[Value; 8]; 4]; 4] = [
     ],
     // BlockedByPawn
     [
-        [v!(0), v!(0), v!(79), v!(23), v!(1), V0, V0, V0],
-        [v!(0), v!(0), v!(148), v!(27), v!(2), V0, V0, V0],
-        [v!(0), v!(0), v!(161), v!(16), v!(1), V0, V0, V0],
-        [v!(0), v!(0), v!(171), v!(22), v!(15), V0, V0, V0],
+        [v!(0), v!(0), v!(19), v!(23), v!(1), V0, V0, V0],
+        [v!(0), v!(0), v!(88), v!(27), v!(2), V0, V0, V0],
+        [v!(0), v!(0), v!(101), v!(16), v!(1), V0, V0, V0],
+        [v!(0), v!(0), v!(111), v!(22), v!(15), V0, V0, V0],
     ],
     // Unblocked
     [
@@ -179,16 +179,6 @@ impl Entry {
     fn shelter_storm<Us: ColorTrait>(&self, pos: &Position, ksq: Square) -> Value {
         let us = Us::COLOR;
         let them = if us == WHITE { BLACK } else { WHITE };
-        let shelter_mask = if us == WHITE {
-            bitboard!(A2, B3, C2, F2, G3, H2)
-        } else {
-            bitboard!(A7, B6, C7, F7, G6, H7)
-        };
-        let storm_mask = if us == WHITE {
-            bitboard!(A3, C3, F3, H3)
-        } else {
-            bitboard!(A6, C6, F6, H6)
-        };
 
         const BLOCKED_BY_KING: usize = 0;
         const UNOPPOSED: usize = 1;
@@ -229,10 +219,6 @@ impl Entry {
                 } else {
                     UNBLOCKED
                 }][d as usize][rk_them as usize];
-        }
-
-        if popcount((our_pawns & shelter_mask) | (their_pawns & storm_mask)) == 5 {
-            safety += 300;
         }
 
         safety
@@ -392,7 +378,7 @@ fn evaluate<Us: ColorTrait>(pos: &Position, e: &mut Entry) -> Score {
         // which could become passed after one or two pawn pushes.
         if stoppers ^ lever ^ lever_push == 0
             && our_pawns & forward_file_bb(us, s) == 0
-            && popcount(supported) >= popcount(lever)
+            && popcount(supported) >= popcount(lever) - 1
             && popcount(phalanx) >= popcount(lever_push)
         {
             e.passed_pawns[us.0 as usize] |= s;

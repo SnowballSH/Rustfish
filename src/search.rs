@@ -237,7 +237,8 @@ pub fn init() {
                     REDUCTIONS[Pv::NT][imp][d][mc] =
                         std::cmp::max(REDUCTIONS[NonPv::NT][imp][d][mc] - 1, 0);
 
-                    if imp == 0 && REDUCTIONS[NonPv::NT][imp][d][mc] >= 2 {
+                    // Increase reduction for non-PV nodes when eval is not improving
+                    if imp == 0 && r > 1.0 {
                         REDUCTIONS[NonPv::NT][imp][d][mc] += 1;
                     }
                 }
@@ -415,7 +416,12 @@ pub fn thread_search(pos: &mut Position, _th: &threads::ThreadCtrl) {
 
     unsafe {
         let contempt = Score::make(base_ct, base_ct / 2);
-        evaluate::CONTEMPT = if us == WHITE { contempt } else { -contempt };
+        if let Some(th) = &pos.thread_ctrl {
+            th.contempt
+                .set(if us == WHITE { contempt } else { -contempt });
+        } else {
+            evaluate::CONTEMPT = if us == WHITE { contempt } else { -contempt };
+        }
     }
 
     let mut root_depth = Depth::ZERO;
@@ -488,19 +494,17 @@ pub fn thread_search(pos: &mut Position, _th: &threads::ThreadCtrl) {
             if root_depth >= 5 * ONE_PLY {
                 let previous_score = pos.root_moves[pos.pv_idx].previous_score;
                 delta = Value(18);
-                alpha = std::cmp::max(
-                    previous_score - delta,
-                    -Value::INFINITE,
-                );
-                beta = std::cmp::min(
-                    previous_score + delta,
-                    Value::INFINITE,
-                );
+                alpha = std::cmp::max(previous_score - delta, -Value::INFINITE);
+                beta = std::cmp::min(previous_score + delta, Value::INFINITE);
                 let mut ct = base_ct;
                 // Adjust contempt based on root move's previousScore (dynamic contempt)
                 ct += 48 * (previous_score.0 as f32 / 128.0).atan().round() as i32;
                 let ct = Score::make(ct, ct / 2);
-                unsafe { evaluate::CONTEMPT = if us == WHITE { ct } else { -ct } }
+                if let Some(th) = &pos.thread_ctrl {
+                    th.contempt.set(if us == WHITE { ct } else { -ct });
+                } else {
+                    unsafe { evaluate::CONTEMPT = if us == WHITE { ct } else { -ct } };
+                }
             }
 
             // Start with a small aspiration window and, in the case of a fail
@@ -927,8 +931,8 @@ fn search<NT: NodeType>(
             && depth < 3 * ONE_PLY
             && eval <= alpha - Value(RAZOR_MARGIN[(depth / ONE_PLY) as usize])
         {
-            let ralpha =
-                alpha - Value((depth >= 2 * ONE_PLY) as i32 * RAZOR_MARGIN[(depth / ONE_PLY) as usize]);
+            let ralpha = alpha
+                - Value((depth >= 2 * ONE_PLY) as i32 * RAZOR_MARGIN[(depth / ONE_PLY) as usize]);
             let v = qsearch::<NonPv>(pos, ss, ralpha, ralpha + 1, Depth::ZERO);
             if depth < 2 * ONE_PLY || v <= alpha {
                 return v;

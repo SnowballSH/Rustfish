@@ -750,7 +750,7 @@ pub const BishopValueMg: Value = Value(826);
 #[allow(non_upper_case_globals)]
 pub const RookValueMg: Value = Value(1282);
 #[allow(non_upper_case_globals)]
-pub const QueenValueMg: Value = Value(2526);
+pub const QueenValueMg: Value = Value(2500);
 
 #[allow(non_upper_case_globals)]
 pub const PawnValueEg: Value = Value(240);
@@ -761,7 +761,7 @@ pub const BishopValueEg: Value = Value(891);
 #[allow(non_upper_case_globals)]
 pub const RookValueEg: Value = Value(1373);
 #[allow(non_upper_case_globals)]
-pub const QueenValueEg: Value = Value(2646);
+pub const QueenValueEg: Value = Value(2670);
 
 pub const MIDGAME_LIMIT: Value = Value(15258);
 pub const ENDGAME_LIMIT: Value = Value(3915);

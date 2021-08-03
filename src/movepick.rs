@@ -150,7 +150,6 @@ const QCAPTURE: i32 = 16;
 const QCHECK_INIT: i32 = 17;
 const QCHECK: i32 = 18;
 
-
 // partial_insertion_sort() sorts moves in descending order up to and
 // including a given limit.
 fn partial_insertion_sort(list: &mut [ExtMove], limit: i32) {
@@ -195,10 +194,10 @@ fn score_captures(pos: &Position, list: &mut [ExtMove]) {
     for m in list.iter_mut() {
         m.value = piece_value(MG, pos.piece_on(m.m.to())).0
             + pos.capture_history.get(
-            pos.moved_piece(m.m),
-            m.m.to(),
-            pos.piece_on(m.m.to()).piece_type(),
-        );
+                pos.moved_piece(m.m),
+                m.m.to(),
+                pos.piece_on(m.m.to()).piece_type(),
+            );
     }
 }
 
@@ -473,7 +472,7 @@ impl MovePickerQ {
                         self.cur += 1;
                         if m != self.tt_move
                             && (self.depth > Depth::QS_RECAPTURES
-                            || m.to() == self.recapture_square)
+                                || m.to() == self.recapture_square)
                         {
                             return m;
                         }

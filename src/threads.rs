@@ -47,6 +47,7 @@ pub struct ThreadCtrl {
     // nodes and tb_hits are Cell<u64> for lack of atomic u64 types
     pub nodes: Cell<u64>,
     pub tb_hits: Cell<u64>,
+    pub contempt: Cell<Score>,
 }
 
 impl ThreadCtrl {
@@ -73,6 +74,7 @@ impl ThreadCtrl {
             cv: Condvar::new(),
             nodes: Cell::new(0),
             tb_hits: Cell::new(0),
+            contempt: Cell::new(Score::ZERO),
         };
         thread_ctrl
     }
