@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+use std;
+
 use bitboard::*;
 use position::Position;
 use types::*;
-
-use std;
 
 macro_rules! v {
     ($x:expr) => {
@@ -378,7 +378,7 @@ fn evaluate<Us: ColorTrait>(pos: &Position, e: &mut Entry) -> Score {
         // which could become passed after one or two pawn pushes.
         if stoppers ^ lever ^ lever_push == 0
             && our_pawns & forward_file_bb(us, s) == 0
-            && popcount(supported) >= popcount(lever) - 1
+            && popcount(supported) >= popcount(lever)  // - 1
             && popcount(phalanx) >= popcount(lever_push)
         {
             e.passed_pawns[us.0 as usize] |= s;

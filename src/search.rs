@@ -248,7 +248,7 @@ pub fn init() {
                         std::cmp::max(REDUCTIONS[NonPv::NT][imp][d][mc] - 1, 0);
 
                     // Increase reduction for non-PV nodes when eval is not improving
-                    if imp == 0 && r >= 1.5 {
+                    if imp == 0 && r > 1.0 {
                         REDUCTIONS[NonPv::NT][imp][d][mc] += 1;
                     }
                 }
@@ -629,10 +629,10 @@ pub fn thread_search(pos: &mut Position, _th: &threads::ThreadCtrl) {
 
                     if pos.root_moves.len() == 1
                         || (timeman::elapsed() as f64)
-                        > (timeman::optimum() as f64)
-                        * best_move_instability
-                        * (improving_factor as f64)
-                        / 581.0
+                            > (timeman::optimum() as f64)
+                                * best_move_instability
+                                * (improving_factor as f64)
+                                / 581.0
                     {
                         // If we are allowed to ponder do not stop the search
                         // now but keep pondering until the GUI sends
@@ -834,10 +834,10 @@ fn search<NT: NodeType>(
 
                 if b == Bound::EXACT
                     || (if b == Bound::LOWER {
-                    value >= beta
-                } else {
-                    value <= alpha
-                })
+                        value >= beta
+                    } else {
+                        value <= alpha
+                    })
                 {
                     tte.save(
                         pos_key,
@@ -902,12 +902,12 @@ fn search<NT: NodeType>(
             // Can tt_value be used as a better position evaluation?
             if tt_value != Value::NONE
                 && tte.bound()
-                & (if tt_value > tmp {
-                Bound::LOWER
-            } else {
-                Bound::UPPER
-            })
-                != 0
+                    & (if tt_value > tmp {
+                        Bound::LOWER
+                    } else {
+                        Bound::UPPER
+                    })
+                    != 0
             {
                 tmp = tt_value;
             }
@@ -1111,8 +1111,8 @@ fn search<NT: NodeType>(
         // searched.
         if root_node
             && !pos.root_moves[pos.pv_idx..]
-            .iter()
-            .any(|ref rm| rm.pv[0] == m)
+                .iter()
+                .any(|ref rm| rm.pv[0] == m)
         {
             continue;
         }
@@ -1163,7 +1163,8 @@ fn search<NT: NodeType>(
             && tt_value != Value::NONE
             && tte.bound() & Bound::LOWER != 0
             && tte.depth() >= depth - 3 * ONE_PLY
-            && pos.legal(m) {
+            && pos.legal(m)
+        {
             let rbeta = std::cmp::max(tt_value - 2 * depth / ONE_PLY, -Value::MATE);
             let d = (depth / (2 * ONE_PLY)) * ONE_PLY;
             ss[5].excluded_move = m;
@@ -1582,12 +1583,12 @@ fn qsearch<NT: NodeType>(
             // Can tt_value be used as a better evaluation?
             if tt_value != Value::NONE
                 && tte.bound()
-                & (if tt_value > tmp {
-                Bound::LOWER
-            } else {
-                Bound::UPPER
-            })
-                != 0
+                    & (if tt_value > tmp {
+                        Bound::LOWER
+                    } else {
+                        Bound::UPPER
+                    })
+                    != 0
             {
                 best_value = tt_value;
             } else {

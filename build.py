@@ -1,7 +1,7 @@
 import argparse
 import os
 
-THREADS = 2
+THREADS = 3
 
 GAMES = 30
 TIME = 10.0
