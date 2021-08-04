@@ -29,8 +29,8 @@ jobs:
       - name: Copy Binary
         run: python ./copy.py
 
-      - name: Self play
-        run: python ./build.py --test
+      # - name: Self play
+      #   run: python ./build.py --test
 
       - name: Bench
         run: ./rustfish bench

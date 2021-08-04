@@ -248,7 +248,7 @@ pub fn init() {
                         std::cmp::max(REDUCTIONS[NonPv::NT][imp][d][mc] - 1, 0);
 
                     // Increase reduction for non-PV nodes when eval is not improving
-                    if imp == 0 && r > 1.0 {
+                    if imp == 0 && r >= 1.5 {
                         REDUCTIONS[NonPv::NT][imp][d][mc] += 1;
                     }
                 }
