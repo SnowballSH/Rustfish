@@ -179,20 +179,19 @@ impl Entry {
     fn shelter_storm<Us: ColorTrait>(&self, pos: &Position, ksq: Square) -> Value {
         let us = Us::COLOR;
         let them = if us == WHITE { BLACK } else { WHITE };
+        let down = if us == WHITE { SOUTH } else { NORTH };
 
         const BLOCKED_BY_KING: usize = 0;
         const UNOPPOSED: usize = 1;
         const BLOCKED_BY_PAWN: usize = 2;
         const UNBLOCKED: usize = 3;
 
-        let center = std::cmp::max(FILE_B, std::cmp::min(FILE_G, ksq.file()));
-        let b = pos.pieces_p(PAWN)
-            & (forward_ranks_bb(us, ksq) | ksq.rank_bb())
-            & (adjacent_files_bb(center) | file_bb(center));
+        let b = pos.pieces_p(PAWN) & (forward_ranks_bb(us, ksq) | ksq.rank_bb());
         let our_pawns = b & pos.pieces_c(us);
         let their_pawns = b & pos.pieces_c(them);
         let mut safety = MAX_SAFETY_BONUS;
 
+        let center = std::cmp::max(FILE_B, std::cmp::min(FILE_G, ksq.file()));
         for f in (center - 1)..(center + 2) {
             let b = our_pawns & file_bb(f);
             let rk_us = if b != 0 {
@@ -210,7 +209,7 @@ impl Entry {
 
             let d = std::cmp::min(f, FILE_H - f);
             safety -= SHELTER_WEAKNESS[(f == ksq.file()) as usize][d as usize][rk_us as usize]
-                + STORM_DANGER[if f == ksq.file() && rk_them == ksq.relative_rank(us) + 1 {
+                + STORM_DANGER[if (b.shift(down) & ksq.bb()).0 != 0 {
                     BLOCKED_BY_KING
                 } else if rk_us == RANK_1 {
                     UNOPPOSED

@@ -400,7 +400,7 @@ pub fn thread_search(pos: &mut Position, _th: &threads::ThreadCtrl) {
     let mut multi_pv = ucioption::get_i32("MultiPV") as usize;
     multi_pv = std::cmp::min(multi_pv, pos.root_moves.len());
 
-    let mut base_ct = ucioption::get_i32("Contempt") * PawnValueEg.0 / 100;
+    let mut base_ct = ucioption::get_i32("Contempt") * PawnValueEg.0 / 100; // From centipawns
 
     // In analysis mode, adjust contempt in accordance with user preference
     if limits().infinite || ucioption::get_bool("UCI_AnalyseMode") {
@@ -1258,34 +1258,35 @@ fn search<NT: NodeType>(
             let mut r = reduction::<NT>(improving, depth, move_count);
 
             if capture_or_promotion {
+                // (~5 Elo)
                 r -= if r != Depth::ZERO {
                     ONE_PLY
                 } else {
                     Depth::ZERO
                 };
             } else {
-                // Decrease reduction if opponent's move count is high
+                // Decrease reduction if opponent's move count is high (~5 Elo)
                 if ss[4].move_count > 15 {
                     r -= ONE_PLY;
                 }
 
-                // Decrease reduction for exact PV nodes
+                // Decrease reduction for exact PV nodes (~0 Elo)
                 if pv_exact {
                     r -= ONE_PLY;
                 }
 
-                // Increase reduction if tt_move is a capture
+                // Increase reduction if tt_move is a capture (~0 Elo)
                 if tt_capture {
                     r += ONE_PLY;
                 }
 
-                // Increase reduction for cut nodes
+                // Increase reduction for cut nodes (~5 Elo)
                 if cut_node {
                     r += 2 * ONE_PLY;
                 }
                 // Decrease reduction for moves that escape a capture. Filter
                 // out castling moves, because they are coded as "king captures
-                // rook" and hence break do_move().
+                // rook" and hence break do_move(). (~5 Elo)
                 else if m.move_type() == NORMAL
                     && !pos.see_ge(Move::make(m.to(), m.from()), Value::ZERO)
                 {
@@ -1299,7 +1300,7 @@ fn search<NT: NodeType>(
                     - 4000; // Correction factor
 
                 // Decrease/increase reduction by comparing opponent's stat
-                // score
+                // score (~10 Elo)
                 if ss[5].stat_score >= 0 && ss[4].stat_score < 0 {
                     r -= ONE_PLY;
                 } else if ss[4].stat_score >= 0 && ss[5].stat_score < 0 {
@@ -1307,7 +1308,7 @@ fn search<NT: NodeType>(
                 }
 
                 // Decrease/increase reduction for moves with a good/bad
-                // history
+                // history (~30 Elo)
                 r = std::cmp::max(
                     Depth::ZERO,
                     (r / ONE_PLY - ss[5].stat_score / 20000) * ONE_PLY,
@@ -1406,6 +1407,7 @@ fn search<NT: NodeType>(
                     alpha = value;
                 } else {
                     debug_assert!(value >= beta); // Fail high
+                                                  // ss[5].stat_score = ss[5].stat_score.max(0);
                     break;
                 }
             }

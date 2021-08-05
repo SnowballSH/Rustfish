@@ -17,9 +17,9 @@ struct Opt {
 impl Opt {
     pub fn new(key: &'static str, val: OptVal, on_change: OnChange) -> Opt {
         Opt {
-            key: key,
-            val: val,
-            on_change: on_change,
+            key,
+            val,
+            on_change,
         }
     }
 }
@@ -49,27 +49,27 @@ enum OptVal {
 impl OptVal {
     pub fn string(def: &'static str) -> OptVal {
         OptVal::StringOpt {
-            def: def,
+            def,
             cur: String::from(def),
         }
     }
 
     pub fn spin(def: i32, min: i32, max: i32) -> OptVal {
         OptVal::Spin {
-            def: def,
+            def,
             cur: def,
-            min: min,
-            max: max,
+            min,
+            max,
         }
     }
 
     pub fn check(def: bool) -> OptVal {
-        OptVal::Check { def: def, cur: def }
+        OptVal::Check { def, cur: def }
     }
 
     pub fn combo(def: &'static str) -> OptVal {
         OptVal::Combo {
-            def: def,
+            def,
             cur: String::from(&def[0..def.find(" var").unwrap()]).to_lowercase(),
         }
     }
@@ -104,7 +104,7 @@ pub fn init() {
     opts.push(Opt::new("Contempt", OptVal::spin(12, -100, 100), None));
     opts.push(Opt::new(
         "Analysis Contempt",
-        OptVal::combo("Off var Off var White var Black"),
+        OptVal::combo("Both var Off var White var Black var Both"),
         None,
     ));
     opts.push(Opt::new(

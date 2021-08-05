@@ -317,24 +317,25 @@ const RANK_FACTOR: [i32; 8] = [0, 0, 0, 2, 7, 12, 19, 0];
 const KING_PROTECTOR: [Score; 4] = [s!(-3, -5), s!(-4, -3), s!(-3, 0), s!(-1, 1)];
 
 /// Assorted bonuses and penalties used by evaluation
-const MINOR_BEHIND_PAWN: Score = s!(16, 0);
 const BISHOP_PAWNS: Score = s!(8, 12);
-const LONG_DIAGONAL_BISHOP: Score = s!(22, 0);
-const ROOK_ON_PAWN: Score = s!(8, 24);
-const TRAPPED_ROOK: Score = s!(92, 0);
-const WEAK_QUEEN: Score = s!(50, 10);
 const CLOSE_ENEMIES: Score = s!(7, 0);
-const PAWNLESS_FLANK: Score = s!(20, 80);
-const THREAT_BY_SAFE_PAWN: Score = s!(175, 168);
-const THREAT_BY_RANK: Score = s!(16, 3);
+const CONNECTIVITY: Score = s!(3, 1);
+const CORNERED_BISHOP: Score = s!(50, 50);
 const HANGING: Score = s!(52, 30);
-const WEAK_UNOPPOSED_PAWN: Score = s!(5, 25);
-const THREAT_BY_PAWN_PUSH: Score = s!(47, 26);
-const THREAT_BY_SLIDER_ON_QUEEN: Score = s!(42, 21);
 const HINDER_PASSED_PAWN: Score = s!(8, 1);
 const KNIGHT_ON_QUEEN: Score = s!(21, 11);
-const CORNERED_BISHOP: Score = s!(50, 50);
-const CONNECTIVITY: Score = s!(3, 1);
+const LONG_DIAGONAL_BISHOP: Score = s!(22, 0);
+const MINOR_BEHIND_PAWN: Score = s!(16, 0);
+const OVERLOAD: Score = s!(10, 5);
+const PAWNLESS_FLANK: Score = s!(20, 80);
+const ROOK_ON_PAWN: Score = s!(8, 24);
+const THREAT_BY_PAWN_PUSH: Score = s!(47, 26);
+const THREAT_BY_RANK: Score = s!(16, 3);
+const THREAT_BY_SAFE_PAWN: Score = s!(175, 168);
+const THREAT_BY_SLIDER_ON_QUEEN: Score = s!(42, 21);
+const TRAPPED_ROOK: Score = s!(92, 0);
+const WEAK_QUEEN: Score = s!(50, 10);
+const WEAK_UNOPPOSED_PAWN: Score = s!(5, 25);
 
 /// king_attack_weights[PieceType] contains king attack weights by piece
 /// type
@@ -447,7 +448,11 @@ fn evaluate_pieces<Us: ColorTrait, Pt: PieceTypeTrait>(pos: &Position, ei: &mut 
                 popcount(b & ei.attacked_by[them.0 as usize][KING.0 as usize]) as i32;
         }
 
-        let mob = popcount(b & ei.mobility_area[us.0 as usize]);
+        let mob = if pt == KNIGHT || pt == BISHOP {
+            popcount(b & ei.mobility_area[us.0 as usize] & !pos.pieces_cp(us, QUEEN))
+        } else {
+            popcount(b & ei.mobility_area[us.0 as usize])
+        };
 
         ei.mobility[us.0 as usize] += MOBILITY_BONUS[(pt.0 - 2) as usize][mob as usize];
 
@@ -672,10 +677,11 @@ fn evaluate_threats<Us: ColorTrait>(pos: &Position, ei: &EvalInfo) -> Score {
 
     let mut score = Score::ZERO;
 
-    // Non-pawn enemies attacked by a pawn
+    // Non-pawn enemies
     let non_pawn_enemies = pos.pieces_c(them) ^ pos.pieces_cp(them, PAWN);
 
     /*
+    TODO remove
     let weak = non_pawn_enemies
         & ei.attacked_by[us.0 as usize][PAWN.0 as usize];
 
@@ -689,14 +695,6 @@ fn evaluate_threats<Us: ColorTrait>(pos: &Position, ei: &EvalInfo) -> Score {
         score += THREAT_BY_SAFE_PAWN * (popcount(safe_threats) as i32);
     }
      */
-
-    let b = pos.pieces_cp(us, PAWN)
-        & (!ei.attacked_by[them.0 as usize][ALL_PIECES.0 as usize]
-            | ei.attacked_by[us.0 as usize][ALL_PIECES.0 as usize]);
-
-    let safe_threats = (b.shift(right) | b.shift(left)) & non_pawn_enemies;
-
-    score += THREAT_BY_SAFE_PAWN * (popcount(safe_threats) as i32);
 
     // Squares strongly protected by the opponent, either because they attack
     // the square with a pawn or because they attack the square twice and
@@ -733,19 +731,36 @@ fn evaluate_threats<Us: ColorTrait>(pos: &Position, ei: &EvalInfo) -> Score {
             }
         }
 
-        score += HANGING
-            * (popcount(weak & !ei.attacked_by[them.0 as usize][ALL_PIECES.0 as usize]) as i32);
-
-        let b = weak & ei.attacked_by[us.0 as usize][KING.0 as usize];
+        let mut b = weak & ei.attacked_by[us.0 as usize][KING.0 as usize];
         if b != 0 {
             score += THREAT_BY_KING[more_than_one(b) as usize];
         }
+
+        score += HANGING
+            * (popcount(weak & !ei.attacked_by[them.0 as usize][ALL_PIECES.0 as usize]) as i32);
+
+        // Bonus for overload (non-pawn enemies attacked and defended exactly once)
+        b = non_pawn_enemies
+            & ei.attacked_by[us.0 as usize][ALL_PIECES.0 as usize]
+            & !ei.attacked_by2[us.0 as usize]
+            & ei.attacked_by[them.0 as usize][ALL_PIECES.0 as usize]
+            & !ei.attacked_by2[them.0 as usize];
+        score += OVERLOAD * popcount(b) as i32;
     }
 
     // Bonus for unopposed weak opponent pawns
     if pos.pieces_cpp(us, ROOK, QUEEN) != 0 {
         score += WEAK_UNOPPOSED_PAWN * ei.pe.weak_unopposed(them);
     }
+
+    // Our safe or protected pawns
+    let b = pos.pieces_cp(us, PAWN)
+        & (!ei.attacked_by[them.0 as usize][ALL_PIECES.0 as usize]
+            | ei.attacked_by[us.0 as usize][ALL_PIECES.0 as usize]);
+
+    let safe_threats = (b.shift(right) | b.shift(left)) & non_pawn_enemies;
+
+    score += THREAT_BY_SAFE_PAWN * (popcount(safe_threats) as i32);
 
     // Find squares where our pawns can push on the next move
     let mut b = pos.pieces_cp(us, PAWN).shift(up) & !pos.pieces();
@@ -911,11 +926,8 @@ fn evaluate_space<Us: ColorTrait>(pos: &Position, ei: &EvalInfo) -> Score {
     // Find the safe squares for our pieces inside the areas defended by
     // SpaceMask. A square is unsafe if it is attacked by an enemy pawn
     // or if it is undefended and attacked by an enemy piece.
-    let safe = space_mask
-        & !pos.pieces_cp(us, PAWN)
-        & !ei.attacked_by[them.0 as usize][PAWN.0 as usize]
-        & (ei.attacked_by[us.0 as usize][ALL_PIECES.0 as usize]
-            | !ei.attacked_by[them.0 as usize][ALL_PIECES.0 as usize]);
+    let safe =
+        space_mask & !pos.pieces_cp(us, PAWN) & !ei.attacked_by[them.0 as usize][PAWN.0 as usize];
 
     // Find all squares which are at most three squares behind some friendly
     // pawn.
