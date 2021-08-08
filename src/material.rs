@@ -246,14 +246,6 @@ pub fn probe(pos: &Position) -> &'static mut Entry {
         };
     }
 
-    if pos.count(WHITE, PAWN) == 1 && npm_w - npm_b <= BishopValueMg {
-        e.factor[WHITE.0 as usize] = ScaleFactor::ONEPAWN.0 as u8;
-    }
-
-    if pos.count(BLACK, PAWN) == 1 && npm_b - npm_w <= BishopValueMg {
-        e.factor[BLACK.0 as usize] = ScaleFactor::ONEPAWN.0 as u8;
-    }
-
     // Evaluate the material imbalance. We use PIECE_TYPE_NONE as a place
     // holder for the bishop pair "extended piece", which allows us to be
     // more flexible in defining bishop pair bonuses.

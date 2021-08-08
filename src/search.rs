@@ -508,7 +508,7 @@ pub fn thread_search(pos: &mut Position, _th: &threads::ThreadCtrl) {
                 beta = std::cmp::min(previous_score + delta, Value::INFINITE);
                 let mut ct = base_ct;
                 // Adjust contempt based on root move's previousScore (dynamic contempt)
-                ct += 48 * (previous_score.0 as f32 / 128.0).atan().round() as i32;
+                ct += 88 * previous_score / (previous_score.abs() + 200);
                 let ct = Score::make(ct, ct / 2);
                 if let Some(th) = &pos.thread_ctrl {
                     th.contempt.set(if us == WHITE { ct } else { -ct });
@@ -1063,10 +1063,7 @@ fn search<NT: NodeType>(
         }
 
         // Step 11. Internal iterative deepening (skipped when in check, ~2 Elo)
-        if depth >= 6 * ONE_PLY
-            && tt_move == Move::NONE
-            && (pv_node || ss[5].static_eval + 256 >= beta)
-        {
+        if depth >= 8 * ONE_PLY && tt_move == Move::NONE {
             let d = (3 * depth / (4 * ONE_PLY) - 2) * ONE_PLY;
             search::<NT>(pos, ss, alpha, beta, d, cut_node, true);
 

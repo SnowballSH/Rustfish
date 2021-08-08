@@ -317,7 +317,7 @@ const RANK_FACTOR: [i32; 8] = [0, 0, 0, 2, 7, 12, 19, 0];
 const KING_PROTECTOR: [Score; 4] = [s!(-3, -5), s!(-4, -3), s!(-3, 0), s!(-1, 1)];
 
 /// Assorted bonuses and penalties used by evaluation
-const BISHOP_PAWNS: Score = s!(8, 12);
+const BISHOP_PAWNS: Score = s!(3, 5);
 const CLOSE_ENEMIES: Score = s!(7, 0);
 const CONNECTIVITY: Score = s!(3, 1);
 const CORNERED_BISHOP: Score = s!(50, 50);
@@ -368,9 +368,10 @@ fn initialize<Us: ColorTrait>(pos: &Position, ei: &mut EvalInfo) {
     // Find our pawns on the first two ranks and those which are blocked
     let b = pos.pieces_cp(us, PAWN) & (pos.pieces().shift(down) | low_ranks);
 
-    // Squares occupied by those pawns, by our king, or controlled by enemy
+    // Squares occupied by those pawns, by our king or queen, or controlled by enemy
     // pawns are excluded from the mobility area.
-    ei.mobility_area[us.0 as usize] = !(b | pos.square(us, KING) | ei.pe.pawn_attacks(them));
+    ei.mobility_area[us.0 as usize] =
+        !(b | pos.pieces_cpp(us, KING, QUEEN) | ei.pe.pawn_attacks(them));
 
     // Initialize the attack bitboards with the king and pawn information
     let b = pos.attacks_from(KING, pos.square(us, KING));
@@ -410,6 +411,7 @@ fn evaluate_pieces<Us: ColorTrait, Pt: PieceTypeTrait>(pos: &Position, ei: &mut 
     let us = Us::COLOR;
     let pt = Pt::TYPE;
     let them = if us == WHITE { BLACK } else { WHITE };
+    let down = if us == WHITE { SOUTH } else { NORTH };
     let outpost_ranks = if us == WHITE {
         RANK4_BB | RANK5_BB | RANK6_BB
     } else {
@@ -448,11 +450,7 @@ fn evaluate_pieces<Us: ColorTrait, Pt: PieceTypeTrait>(pos: &Position, ei: &mut 
                 popcount(b & ei.attacked_by[them.0 as usize][KING.0 as usize]) as i32;
         }
 
-        let mob = if pt == KNIGHT || pt == BISHOP {
-            popcount(b & ei.mobility_area[us.0 as usize] & !pos.pieces_cp(us, QUEEN))
-        } else {
-            popcount(b & ei.mobility_area[us.0 as usize])
-        };
+        let mob = popcount(b & ei.mobility_area[us.0 as usize]);
 
         ei.mobility[us.0 as usize] += MOBILITY_BONUS[(pt.0 - 2) as usize][mob as usize];
 
@@ -481,8 +479,13 @@ fn evaluate_pieces<Us: ColorTrait, Pt: PieceTypeTrait>(pos: &Position, ei: &mut 
             }
 
             if pt == BISHOP {
-                // Penalty for pawns on the same color square as the bishop
-                score -= BISHOP_PAWNS * ei.pe.pawns_on_same_color_squares(us, s);
+                // Penalty according to number of pawns on the same color square as the
+                // bishop, bigger when the center files are blocked with pawns.
+                let blocked = pos.pieces_cp(us, PAWN) & pos.pieces().shift(down);
+
+                score -= BISHOP_PAWNS
+                    * ei.pe.pawns_on_same_color_squares(us, s)
+                    * (1 + popcount(blocked & CENTER_FILES)) as i32;
 
                 // Bonus for bishop on a long diagonal with can "see" both
                 // center squares
@@ -895,7 +898,7 @@ fn evaluate_passed_pawns<Us: ColorTrait>(pos: &Position, ei: &EvalInfo) -> Score
         } // rr != 0
 
         // Scale down bonus for candidate passers which need more than one
-        // pawn push to become passed or have a pawn in front of them.
+        // pawn push to become passed, or have a pawn in front of them.
         if !pos.pawn_passed(us, s + up) || pos.pieces_p(PAWN) & forward_file_bb(us, s) != 0 {
             mbonus /= 2;
             ebonus /= 2;
@@ -923,9 +926,7 @@ fn evaluate_space<Us: ColorTrait>(pos: &Position, ei: &EvalInfo) -> Score {
         CENTER_FILES & (RANK7_BB | RANK6_BB | RANK5_BB)
     };
 
-    // Find the safe squares for our pieces inside the areas defended by
-    // SpaceMask. A square is unsafe if it is attacked by an enemy pawn
-    // or if it is undefended and attacked by an enemy piece.
+    // Find the available squares for our pieces inside the area defined by space_mask
     let safe =
         space_mask & !pos.pieces_cp(us, PAWN) & !ei.attacked_by[them.0 as usize][PAWN.0 as usize];
 
@@ -984,11 +985,10 @@ fn evaluate_initiative(pos: &Position, ei: &EvalInfo, eg: Value) -> Score {
 
 fn evaluate_scale_factor(pos: &Position, ei: &EvalInfo, eg: Value) -> ScaleFactor {
     let strong_side = if eg > Value::DRAW { WHITE } else { BLACK };
-    let sf = ei.me.scale_factor(pos, strong_side);
+    let mut sf = ei.me.scale_factor(pos, strong_side);
 
-    // If we don't already have an unusual scale factor, check for certain
-    // types of endgames and use a lower scale for those.
-    if sf == ScaleFactor::NORMAL || sf == ScaleFactor::ONEPAWN {
+    // If scale is not already specific, scale down the endgame via general heuristics
+    if sf == ScaleFactor::NORMAL {
         if pos.opposite_bishops() {
             // Endgame with opposite-coloured bishops and no other pieces
             // (ignoring pawns) is almost a draw. In case of KBP vs KB, it is
@@ -996,18 +996,15 @@ fn evaluate_scale_factor(pos: &Position, ei: &EvalInfo, eg: Value) -> ScaleFacto
             if pos.non_pawn_material_c(WHITE) == BishopValueMg
                 && pos.non_pawn_material_c(BLACK) == BishopValueMg
             {
-                return ScaleFactor(31);
+                sf = ScaleFactor(31);
+            } else {
+                // Endgame with opposite-coloured bishops, but also other pieces.
+                // Still a bit drawish, but not as drawish as with only the two
+                // bishops.
+                sf = ScaleFactor(46);
             }
-
-            // Endgame with opposite-coloured bishops, but also other pieces.
-            // Still a bit drawish, but not as drawish as with only the two
-            // bishops.
-            return ScaleFactor(46);
-        } else if eg.abs() <= BishopValueEg
-            && pos.count(strong_side, PAWN) <= 2
-            && !pos.pawn_passed(!strong_side, pos.square(!strong_side, KING))
-        {
-            return ScaleFactor(37 + 7 * pos.count(strong_side, PAWN));
+        } else {
+            sf = ScaleFactor(sf.0.min(40 + 7 * pos.count(strong_side, PAWN)));
         }
     }
 

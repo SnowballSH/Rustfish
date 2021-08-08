@@ -195,7 +195,6 @@ pub struct ScaleFactor(pub i32);
 
 impl ScaleFactor {
     pub const DRAW: ScaleFactor = ScaleFactor(0);
-    pub const ONEPAWN: ScaleFactor = ScaleFactor(48);
     pub const NORMAL: ScaleFactor = ScaleFactor(64);
     pub const MAX: ScaleFactor = ScaleFactor(128);
     pub const NONE: ScaleFactor = ScaleFactor(255);

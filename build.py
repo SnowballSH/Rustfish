@@ -4,7 +4,7 @@ import os
 THREADS = 3
 
 GAMES = 30
-TIME = 4.0
+TIME = 5.0
 INC = 0.0
 
 OPENINGS = (
@@ -45,8 +45,11 @@ def run_once(id_: int, q):
 
     stat = [0, 0, 0]
     for g in range(GAMES):
+        if g % 5 == 0 and g != 0:
+            print(f"WIN {stat[0]} DRAW {stat[1]} LOSE {stat[2]}")
+
         e1 = chess.engine.SimpleEngine.popen_uci("./target/release/rustfish.exe")
-        e2 = chess.engine.SimpleEngine.popen_uci("rustfish")
+        e2 = chess.engine.SimpleEngine.popen_uci("./rustfish")
 
         reverse = g % 2 == 1
 

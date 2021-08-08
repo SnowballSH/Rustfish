@@ -136,6 +136,9 @@ pub fn free() {
     }
 }
 
+/// set() creates/destroys threads to match the requested number.
+/// Created and launched threads wil go immediately to sleep in idle_loop.
+/// Upon resizing, threads are recreated to allow for binding if necessary.
 pub fn set(requested: usize) {
     let mut handlers = unsafe { Box::from_raw(HANDLERS) };
     let mut threads = unsafe { Box::from_raw(THREADS) };

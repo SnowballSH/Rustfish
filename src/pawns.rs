@@ -31,22 +31,31 @@ static mut CONNECTED: [[[[Score; 8]; 3]; 2]; 2] = [[[[Score::ZERO; 8]; 3]; 2]; 2
 // Doubled pawn penalty
 const DOUBLED: Score = s!(18, 38);
 
-// Weakness of our pawn shelter in front of the king by
-// [is_king_file][distance from edge][rank]. RANK_1 = 0 is used for files
-// where we have no pawns or our pawn is behind our king.
-const SHELTER_WEAKNESS: [[[Value; 8]; 4]; 2] = [
+// Strength of pawn shelter for our king by [distance from edge][rank].
+// RANK_1 = 0 is used for files where we have no pawn, or pawn is behind our king.
+const SHELTER_STRENGTH: [[Value; 8]; 4] = [
+    [v!(-9), v!(64), v!(77), v!(44), v!(4), v!(-1), v!(-11), V0],
     [
-        [v!(98), v!(20), v!(11), v!(42), v!(83), v!(84), v!(101), V0],
-        [v!(103), v!(8), v!(33), v!(86), v!(87), v!(105), v!(113), V0],
-        [v!(100), v!(2), v!(65), v!(95), v!(59), v!(89), v!(115), V0],
-        [v!(72), v!(6), v!(52), v!(74), v!(83), v!(84), v!(112), V0],
+        v!(-15),
+        v!(83),
+        v!(51),
+        v!(-10),
+        v!(1),
+        v!(-10),
+        v!(-28),
+        V0,
     ],
     [
-        [v!(105), v!(19), v!(3), v!(27), v!(85), v!(93), v!(84), V0],
-        [v!(121), v!(7), v!(33), v!(95), v!(112), v!(86), v!(72), V0],
-        [v!(121), v!(26), v!(65), v!(90), v!(65), v!(76), v!(117), V0],
-        [v!(79), v!(0), v!(45), v!(65), v!(94), v!(92), v!(105), V0],
+        v!(-18),
+        v!(84),
+        v!(27),
+        v!(-12),
+        v!(21),
+        v!(-7),
+        v!(-36),
+        V0,
     ],
+    [v!(12), v!(79), v!(25), v!(19), v!(9), v!(-6), v!(-33), V0],
 ];
 
 // Danger of enemy pawns moving toward our king by
@@ -83,10 +92,6 @@ const STORM_DANGER: [[[Value; 8]; 4]; 4] = [
         [v!(21), v!(23), v!(116), v!(41), v!(15), V0, V0, V0],
     ],
 ];
-
-// Max bonus for king safety. Corresponds to start position with all the
-// pawns in front of the king and no enemy pawns on the horizon.
-const MAX_SAFETY_BONUS: Value = v!(258);
 
 // pawns::Entry contains various information about a pawn structure. A lookup
 // in the pawn hash table (performed by calling the probing function) returns
@@ -173,10 +178,10 @@ impl Entry {
         self.king_safety[us.0 as usize]
     }
 
-    // shelter_storm() calculates shelter and storm penalties for the file
-    // the king is on, as well as the two closest files.
+    /// evaluate_shelter() calculates the shelter bonus and the storm
+    /// penalty for a king, looking at the king file and the two closest files.
 
-    fn shelter_storm<Us: ColorTrait>(&self, pos: &Position, ksq: Square) -> Value {
+    fn evaluate_shelter<Us: ColorTrait>(&self, pos: &Position, ksq: Square) -> Value {
         let us = Us::COLOR;
         let them = if us == WHITE { BLACK } else { WHITE };
         let down = if us == WHITE { SOUTH } else { NORTH };
@@ -189,7 +194,11 @@ impl Entry {
         let b = pos.pieces_p(PAWN) & (forward_ranks_bb(us, ksq) | ksq.rank_bb());
         let our_pawns = b & pos.pieces_c(us);
         let their_pawns = b & pos.pieces_c(them);
-        let mut safety = MAX_SAFETY_BONUS;
+        let mut safety = if (our_pawns & ksq.file_bb()).0 != 0 {
+            Value(5)
+        } else {
+            Value(-5)
+        };
 
         let center = std::cmp::max(FILE_B, std::cmp::min(FILE_G, ksq.file()));
         for f in (center - 1)..(center + 2) {
@@ -208,8 +217,8 @@ impl Entry {
             };
 
             let d = std::cmp::min(f, FILE_H - f);
-            safety -= SHELTER_WEAKNESS[(f == ksq.file()) as usize][d as usize][rk_us as usize]
-                + STORM_DANGER[if (b.shift(down) & ksq.bb()).0 != 0 {
+            safety += SHELTER_STRENGTH[d as usize][rk_us as usize]
+                - STORM_DANGER[if (b.shift(down) & ksq.bb()).0 != 0 {
                     BLOCKED_BY_KING
                 } else if rk_us == RANK_1 {
                     UNOPPOSED
@@ -241,20 +250,20 @@ impl Entry {
             min_king_pawn_distance += 1;
         }
 
-        let mut bonus = self.shelter_storm::<Us>(pos, ksq);
+        let mut bonus = self.evaluate_shelter::<Us>(pos, ksq);
 
         // If we can castle use the bonus after the castling if it is bigger
         if pos.has_castling_right(us | CastlingSide::KING) {
             bonus = std::cmp::max(
                 bonus,
-                self.shelter_storm::<Us>(pos, Square::G1.relative(us)),
+                self.evaluate_shelter::<Us>(pos, Square::G1.relative(us)),
             );
         }
 
         if pos.has_castling_right(us | CastlingSide::QUEEN) {
             bonus = std::cmp::max(
                 bonus,
-                self.shelter_storm::<Us>(pos, Square::C1.relative(us)),
+                self.evaluate_shelter::<Us>(pos, Square::C1.relative(us)),
             );
         }
 
