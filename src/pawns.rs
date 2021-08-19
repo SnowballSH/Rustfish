@@ -62,14 +62,7 @@ const SHELTER_STRENGTH: [[Value; 8]; 4] = [
 // [type][distance from edge][rank]. For the unopposed and unblocked cases,
 // RANK_1 = 0 is used when opponent has no pawn on the given file or their
 // pawn is behind our king.
-const STORM_DANGER: [[[Value; 8]; 4]; 4] = [
-    // BlockedByKing
-    [
-        [v!(0), v!(-290), v!(-274), v!(57), v!(41), V0, V0, V0],
-        [v!(0), v!(60), v!(144), v!(39), v!(13), V0, V0, V0],
-        [v!(0), v!(65), v!(141), v!(41), v!(34), V0, V0, V0],
-        [v!(0), v!(53), v!(127), v!(56), v!(14), V0, V0, V0],
-    ],
+const STORM_DANGER: [[[Value; 8]; 4]; 3] = [
     // Unopposed
     [
         [v!(4), v!(73), v!(132), v!(46), v!(31), V0, V0, V0],
@@ -184,12 +177,16 @@ impl Entry {
     fn evaluate_shelter<Us: ColorTrait>(&self, pos: &Position, ksq: Square) -> Value {
         let us = Us::COLOR;
         let them = if us == WHITE { BLACK } else { WHITE };
-        let down = if us == WHITE { SOUTH } else { NORTH };
+        let up = if us == WHITE { NORTH } else { SOUTH };
+        let block_ranks = if us == WHITE {
+            RANK2_BB | RANK3_BB
+        } else {
+            RANK7_BB | RANK6_BB
+        };
 
-        const BLOCKED_BY_KING: usize = 0;
-        const UNOPPOSED: usize = 1;
-        const BLOCKED_BY_PAWN: usize = 2;
-        const UNBLOCKED: usize = 3;
+        const UNOPPOSED: usize = 0;
+        const BLOCKED_BY_PAWN: usize = 1;
+        const UNBLOCKED: usize = 2;
 
         let b = pos.pieces_p(PAWN) & (forward_ranks_bb(us, ksq) | ksq.rank_bb());
         let our_pawns = b & pos.pieces_c(us);
@@ -199,6 +196,10 @@ impl Entry {
         } else {
             Value(-5)
         };
+
+        if ((their_pawns & (FILEA_BB | FILEH_BB) & block_ranks) & (ksq.bb().shift(up))).0 != 0 {
+            safety += 374;
+        }
 
         let center = std::cmp::max(FILE_B, std::cmp::min(FILE_G, ksq.file()));
         for f in (center - 1)..(center + 2) {
@@ -218,11 +219,9 @@ impl Entry {
 
             let d = std::cmp::min(f, FILE_H - f);
             safety += SHELTER_STRENGTH[d as usize][rk_us as usize]
-                - STORM_DANGER[if (b.shift(down) & ksq.bb()).0 != 0 {
-                    BLOCKED_BY_KING
-                } else if rk_us == RANK_1 {
+                - STORM_DANGER[if rk_us == RANK_1 {
                     UNOPPOSED
-                } else if rk_them == rk_us + 1 {
+                } else if rk_us == rk_them - 1 {
                     BLOCKED_BY_PAWN
                 } else {
                     UNBLOCKED
