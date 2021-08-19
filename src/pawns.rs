@@ -177,11 +177,11 @@ impl Entry {
     fn evaluate_shelter<Us: ColorTrait>(&self, pos: &Position, ksq: Square) -> Value {
         let us = Us::COLOR;
         let them = if us == WHITE { BLACK } else { WHITE };
-        let up = if us == WHITE { NORTH } else { SOUTH };
+        let down = if us == WHITE { SOUTH } else { NORTH };
         let block_ranks = if us == WHITE {
-            RANK2_BB | RANK3_BB
+            RANK1_BB | RANK2_BB
         } else {
-            RANK7_BB | RANK6_BB
+            RANK8_BB | RANK7_BB
         };
 
         const UNOPPOSED: usize = 0;
@@ -197,7 +197,7 @@ impl Entry {
             Value(-5)
         };
 
-        if ((their_pawns & (FILEA_BB | FILEH_BB) & block_ranks) & (ksq.bb().shift(up))).0 != 0 {
+        if ((their_pawns.shift(down) & (FILEA_BB | FILEH_BB) & block_ranks) & ksq.bb()).0 != 0 {
             safety += 374;
         }
 
@@ -273,7 +273,7 @@ impl Entry {
 // pawns::init() initializes some tables needed by evaluation.
 
 pub fn init() {
-    const SEED: [i32; 8] = [0, 13, 24, 18, 76, 100, 175, 330];
+    const SEED: [i32; 8] = [0, 13, 24, 18, 65, 100, 175, 330];
 
     for opposed in 0..2 {
         for phalanx in 0..2 {
@@ -366,19 +366,9 @@ fn evaluate<Us: ColorTrait>(pos: &Position, e: &mut Entry) -> Score {
 
         // A pawn is backward if it is behind all pawns of the same color on
         // the adjacent files and cannot be safely advanced.
-        if neighbours == 0 || lever != 0 || s.relative_rank(us) >= RANK_5 {
-            backward = false;
-        } else {
-            // Find the backmost rank with neighbours or stoppers
-            let b = backmost_sq(us, neighbours | stoppers).rank_bb();
-
-            // The pawn is backward if it cannot safely progress to that
-            // rank: either there is a stopper in the way on this rank or
-            // there is a stopper on an adjacent file which controls the way
-            // to that rank.
-            backward = (b | (b & adjacent_files_bb(f)).shift(up)) & stoppers != 0;
-            debug_assert!(!(backward && forward_ranks_bb(them, s + up) & neighbours != 0));
-        }
+        backward = lever.0 == 0
+            && (our_pawns & pawn_attack_span(them, s + up)).0 == 0
+            && (stoppers & (lever_push | (s + up))).0 == 0;
 
         // Passed pawns will be properly scored in evaluation because we need
         // full attack info to evaluate them. Include also not passed pawns
