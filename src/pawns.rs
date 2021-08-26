@@ -197,7 +197,7 @@ impl Entry {
             Value(-5)
         };
 
-        if ((their_pawns.shift(down) & (FILEA_BB | FILEH_BB) & block_ranks) & ksq.bb()).0 != 0 {
+        if (their_pawns.shift(down) & (FILEA_BB | FILEH_BB) & block_ranks & ksq.bb()).0 != 0 {
             safety += 374;
         }
 
@@ -366,8 +366,7 @@ fn evaluate<Us: ColorTrait>(pos: &Position, e: &mut Entry) -> Score {
 
         // A pawn is backward if it is behind all pawns of the same color on
         // the adjacent files and cannot be safely advanced.
-        backward = lever.0 == 0
-            && (our_pawns & pawn_attack_span(them, s + up)).0 == 0
+        backward = (our_pawns & pawn_attack_span(them, s + up)).0 == 0
             && (stoppers & (lever_push | (s + up))).0 == 0;
 
         // Passed pawns will be properly scored in evaluation because we need

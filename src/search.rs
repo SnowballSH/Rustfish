@@ -521,7 +521,7 @@ pub fn thread_search(pos: &mut Position, _th: &threads::ThreadCtrl) {
             // high/low, re-search with a bigger window until we're no longer
             // failing high/low.
             loop {
-                best_value = search::<Pv>(pos, &mut stack, alpha, beta, root_depth, false, false);
+                best_value = search::<Pv>(pos, &mut stack, alpha, beta, root_depth, false);
                 update_counters(pos);
 
                 // Bring the best move to the front. It is critical that
@@ -664,7 +664,6 @@ fn search<NT: NodeType>(
     mut beta: Value,
     depth: Depth,
     cut_node: bool,
-    skip_early_pruning: bool,
 ) -> Value {
     // Use quiescence search when needed
     if depth < ONE_PLY {
@@ -932,7 +931,8 @@ fn search<NT: NodeType>(
 
         improving = ss[5].static_eval >= ss[3].static_eval || ss[3].static_eval == Value::NONE;
 
-        if skip_early_pruning || pos.non_pawn_material_c(pos.side_to_move()) == Value::ZERO {
+        if ss[5].excluded_move.0 != 0 || pos.non_pawn_material_c(pos.side_to_move()) == Value::ZERO
+        {
             break; // goto moves_loop;
         }
 
@@ -960,6 +960,8 @@ fn search<NT: NodeType>(
 
         // Step 9. Null move search with verification search (~40 Elo)
         if !pv_node
+            && ss[4].current_move != Move::NULL
+            && ss[4].stat_score < 30000
             && eval >= beta
             && ss[5].static_eval >= beta - 36 * depth / ONE_PLY + 225
             && (ss[5].ply >= pos.nmp_ply || ss[5].ply & 1 != pos.nmp_odd)
@@ -975,15 +977,8 @@ fn search<NT: NodeType>(
             ss[5].cont_history = pos.cont_history.get(NO_PIECE, Square(0));
 
             pos.do_null_move();
-            let mut null_value = -search::<NonPv>(
-                pos,
-                &mut ss[1..],
-                -beta,
-                -beta + 1,
-                depth - r,
-                !cut_node,
-                true,
-            );
+            let mut null_value =
+                -search::<NonPv>(pos, &mut ss[1..], -beta, -beta + 1, depth - r, !cut_node);
             pos.undo_null_move();
 
             if null_value >= beta {
@@ -1001,7 +996,7 @@ fn search<NT: NodeType>(
                 // first part of the remaining search tree
                 pos.nmp_ply = ss[5].ply + 3 * (depth - r) / (4 * ONE_PLY);
                 pos.nmp_odd = ss[5].ply & 1;
-                let v = search::<NonPv>(pos, ss, beta - 1, beta, depth - r, false, true);
+                let v = search::<NonPv>(pos, ss, beta - 1, beta, depth - r, false);
                 pos.nmp_odd = 0;
                 pos.nmp_ply = 0;
                 if v >= beta {
@@ -1016,8 +1011,6 @@ fn search<NT: NodeType>(
         // move.
         if !pv_node && depth >= 5 * ONE_PLY && beta.abs() < Value::MATE_IN_MAX_PLY {
             let rbeta = std::cmp::min(beta + 216 - 48 * improving as i32, Value::INFINITE);
-
-            debug_assert!(ss[4].current_move.is_ok());
 
             let mut mp = MovePickerPC::new(pos, tt_move, rbeta - ss[5].static_eval);
             let mut prob_cut_count = 3;
@@ -1046,7 +1039,6 @@ fn search<NT: NodeType>(
                             -rbeta + 1,
                             depth - 4 * ONE_PLY,
                             !cut_node,
-                            false,
                         );
                     }
 
@@ -1065,7 +1057,7 @@ fn search<NT: NodeType>(
         // Step 11. Internal iterative deepening (skipped when in check, ~2 Elo)
         if depth >= 8 * ONE_PLY && tt_move == Move::NONE {
             let d = (3 * depth / (4 * ONE_PLY) - 2) * ONE_PLY;
-            search::<NT>(pos, ss, alpha, beta, d, cut_node, true);
+            search::<NT>(pos, ss, alpha, beta, d, cut_node);
 
             let (tmp_tte, tmp_tt_hit) = tt::probe(pos_key);
             tte = tmp_tte;
@@ -1165,7 +1157,7 @@ fn search<NT: NodeType>(
             let rbeta = std::cmp::max(tt_value - 2 * depth / ONE_PLY, -Value::MATE);
             let d = (depth / (2 * ONE_PLY)) * ONE_PLY;
             ss[5].excluded_move = m;
-            let value = search::<NonPv>(pos, ss, rbeta - 1, rbeta, d, cut_node, true);
+            let value = search::<NonPv>(pos, ss, rbeta - 1, rbeta, d, cut_node);
             ss[5].excluded_move = Move::NONE;
 
             if value < rbeta {
@@ -1314,7 +1306,7 @@ fn search<NT: NodeType>(
 
             let d = std::cmp::max(new_depth - r, ONE_PLY);
 
-            value = -search::<NonPv>(pos, &mut ss[1..], -(alpha + 1), -alpha, d, true, false);
+            value = -search::<NonPv>(pos, &mut ss[1..], -(alpha + 1), -alpha, d, true);
             do_full_depth_search = value > alpha && d != new_depth;
         } else {
             do_full_depth_search = !pv_node || move_count > 1;
@@ -1329,7 +1321,6 @@ fn search<NT: NodeType>(
                 -alpha,
                 new_depth,
                 !cut_node,
-                false,
             );
         }
 
@@ -1340,7 +1331,7 @@ fn search<NT: NodeType>(
         if pv_node && (move_count == 1 || (value > alpha && (root_node || value < beta))) {
             ss[6].pv.truncate(0);
 
-            value = -search::<Pv>(pos, &mut ss[1..], -beta, -alpha, new_depth, false, false);
+            value = -search::<Pv>(pos, &mut ss[1..], -beta, -alpha, new_depth, false);
         }
 
         // Step 18. Undo move
