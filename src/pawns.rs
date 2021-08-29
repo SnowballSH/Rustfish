@@ -20,42 +20,33 @@ macro_rules! s {
 const V0: Value = Value::ZERO;
 
 // Isolated pawn penalty
-const ISOLATED: Score = s!(13, 18);
+const ISOLATED: Score = s!(13, 16);
 
 // Backward pawn penalty
-const BACKWARD: Score = s!(24, 12);
+const BACKWARD: Score = s!(17, 11);
 
 // Connected pawn bonus by opposed, phalanx, #support and rank
 static mut CONNECTED: [[[[Score; 8]; 3]; 2]; 2] = [[[[Score::ZERO; 8]; 3]; 2]; 2];
 
 // Doubled pawn penalty
-const DOUBLED: Score = s!(18, 38);
+const DOUBLED: Score = s!(13, 40);
 
 // Strength of pawn shelter for our king by [distance from edge][rank].
 // RANK_1 = 0 is used for files where we have no pawn, or pawn is behind our king.
 const SHELTER_STRENGTH: [[Value; 8]; 4] = [
-    [v!(-9), v!(64), v!(77), v!(44), v!(4), v!(-1), v!(-11), V0],
+    [v!(7), v!(76), v!(84), v!(38), v!(7), v!(30), v!(-19), V0],
     [
-        v!(-15),
-        v!(83),
-        v!(51),
-        v!(-10),
-        v!(1),
-        v!(-10),
-        v!(-28),
+        v!(-3),
+        v!(93),
+        v!(53),
+        v!(-17),
+        v!(12),
+        v!(-22),
+        v!(-35),
         V0,
     ],
-    [
-        v!(-18),
-        v!(84),
-        v!(27),
-        v!(-12),
-        v!(21),
-        v!(-7),
-        v!(-36),
-        V0,
-    ],
-    [v!(12), v!(79), v!(25), v!(19), v!(9), v!(-6), v!(-33), V0],
+    [v!(-6), v!(83), v!(25), v!(-24), v!(15), v!(22), v!(-39), V0],
+    [v!(11), v!(83), v!(19), v!(8), v!(18), v!(-21), v!(-30), V0],
 ];
 
 // Danger of enemy pawns moving toward our king by
@@ -65,24 +56,24 @@ const SHELTER_STRENGTH: [[Value; 8]; 4] = [
 const STORM_DANGER: [[[Value; 8]; 4]; 3] = [
     // Unopposed
     [
-        [v!(4), v!(73), v!(132), v!(46), v!(31), V0, V0, V0],
-        [v!(1), v!(64), v!(143), v!(26), v!(13), V0, V0, V0],
-        [v!(1), v!(47), v!(110), v!(44), v!(24), V0, V0, V0],
-        [v!(0), v!(72), v!(127), v!(50), v!(31), V0, V0, V0],
+        [v!(11), v!(79), v!(132), v!(68), v!(33), V0, V0, V0],
+        [v!(4), v!(104), v!(155), v!(4), v!(21), V0, V0, V0],
+        [v!(-7), v!(59), v!(142), v!(45), v!(30), V0, V0, V0],
+        [v!(0), v!(62), v!(113), v!(43), v!(13), V0, V0, V0],
     ],
     // BlockedByPawn
     [
-        [v!(0), v!(0), v!(19), v!(23), v!(1), V0, V0, V0],
-        [v!(0), v!(0), v!(88), v!(27), v!(2), V0, V0, V0],
-        [v!(0), v!(0), v!(101), v!(16), v!(1), V0, V0, V0],
-        [v!(0), v!(0), v!(111), v!(22), v!(15), V0, V0, V0],
+        [v!(0), v!(0), v!(37), v!(5), v!(-48), V0, V0, V0],
+        [v!(0), v!(0), v!(68), v!(-12), v!(13), V0, V0, V0],
+        [v!(0), v!(0), v!(111), v!(-25), v!(-3), V0, V0, V0],
+        [v!(0), v!(0), v!(108), v!(14), v!(21), V0, V0, V0],
     ],
     // Unblocked
     [
-        [v!(22), v!(45), v!(104), v!(62), v!(6), V0, V0, V0],
-        [v!(31), v!(30), v!(99), v!(39), v!(19), V0, V0, V0],
-        [v!(23), v!(29), v!(96), v!(41), v!(15), V0, V0, V0],
-        [v!(21), v!(23), v!(116), v!(41), v!(15), V0, V0, V0],
+        [v!(38), v!(78), v!(83), v!(35), v!(22), V0, V0, V0],
+        [v!(33), v!(-15), v!(108), v!(12), v!(28), V0, V0, V0],
+        [v!(8), v!(25), v!(94), v!(68), v!(25), V0, V0, V0],
+        [v!(6), v!(48), v!(120), v!(68), v!(40), V0, V0, V0],
     ],
 ];
 

@@ -293,24 +293,24 @@ const THREAT_BY_KING: [Score; 2] = [s!(3, 65), s!(9, 145)];
 /// PASSED[mg/eg][Rank] contains midgame and endgame bonuses for passed pawns.
 /// We don't use a Score because we process the two components independently.
 const PASSED: [[i32; 8]; 2] = [
-    [0, 5, 5, 32, 70, 172, 217, 0],
-    [0, 7, 13, 42, 70, 170, 269, 0],
+    [0, 5, 5, 18, 74, 164, 268, 0],
+    [0, 7, 13, 23, 58, 166, 243, 0],
 ];
 
 /// PASSED_FILE[File] contains a bonus according to the file of a passed pawn
 const PASSED_FILE: [Score; 8] = [
-    s!(9, 10),
-    s!(2, 10),
-    s!(1, -8),
-    s!(-20, -12),
-    s!(-20, -12),
-    s!(1, -8),
-    s!(2, 10),
-    s!(9, 10),
+    s!(15, 7),
+    s!(-5, 14),
+    s!(1, -5),
+    s!(-22, -11),
+    s!(-22, -11),
+    s!(1, -5),
+    s!(-5, 14),
+    s!(15, 7),
 ];
 
-/// Rank-dependent factor for a passed-pawn bonus
-const RANK_FACTOR: [i32; 8] = [0, 0, 0, 2, 7, 12, 19, 0];
+/// PASSED_DANGER contains terms to weight the passed score
+const PASSED_DANGER: [i32; 8] = [0, 0, 0, 3, 6, 12, 21, 0];
 
 /// KING_PROTECTOR[PieceType-2] contains a bonus according to distance from
 /// king
@@ -828,7 +828,7 @@ fn evaluate_passed_pawns<Us: ColorTrait>(pos: &Position, ei: &EvalInfo) -> Score
         score -= HINDER_PASSED_PAWN * popcount(bb) as i32;
 
         let r = s.relative_rank(us);
-        let rr = RANK_FACTOR[r as usize];
+        let rr = PASSED_DANGER[r as usize];
 
         let mut mbonus = PASSED[MG][r as usize];
         let mut ebonus = PASSED[EG][r as usize];

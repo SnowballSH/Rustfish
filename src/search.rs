@@ -883,13 +883,13 @@ fn search<NT: NodeType>(
 
     let improving;
 
-    // Step 6. Evaluate the position statically
+    // Step 6. Static evaluation of the position
     loop {
         let eval;
         if in_check {
             ss[5].static_eval = Value::NONE;
             improving = false;
-            break; // goto moves_loop;
+            break; // goto moves_loop; (Skip early pruning when in check)
         } else if tt_hit {
             // Never assume anything about values stored in TT
             let mut tmp = tte.eval();
@@ -929,14 +929,7 @@ fn search<NT: NodeType>(
             );
         }
 
-        improving = ss[5].static_eval >= ss[3].static_eval || ss[3].static_eval == Value::NONE;
-
-        if ss[5].excluded_move.0 != 0 || pos.non_pawn_material_c(pos.side_to_move()) == Value::ZERO
-        {
-            break; // goto moves_loop;
-        }
-
-        // Step 7. Razoring (skipped when in check, ~2 Elo)
+        // Step 7. Razoring (~2 Elo)
         if !pv_node
             && depth < 3 * ONE_PLY
             && eval <= alpha - Value(RAZOR_MARGIN[(depth / ONE_PLY) as usize])
@@ -949,7 +942,9 @@ fn search<NT: NodeType>(
             }
         }
 
-        // Step 8. Futility pruning: child node (skipped when in check, ~30 Elo)
+        improving = ss[5].static_eval >= ss[3].static_eval || ss[3].static_eval == Value::NONE;
+
+        // Step 8. Futility pruning: child node (~30 Elo)
         if !root_node
             && depth < 7 * ONE_PLY
             && eval - futility_margin(depth, improving) >= beta
@@ -961,9 +956,11 @@ fn search<NT: NodeType>(
         // Step 9. Null move search with verification search (~40 Elo)
         if !pv_node
             && ss[4].current_move != Move::NULL
-            && ss[4].stat_score < 30000
+            && ss[4].stat_score < 22500
             && eval >= beta
             && ss[5].static_eval >= beta - 36 * depth / ONE_PLY + 225
+            && ss[5].excluded_move.0 == 0
+            && pos.non_pawn_material_c(pos.side_to_move()) != Value::ZERO
             && (ss[5].ply >= pos.nmp_ply || ss[5].ply & 1 != pos.nmp_odd)
         {
             debug_assert!(eval - beta >= Value::ZERO);
@@ -1005,7 +1002,7 @@ fn search<NT: NodeType>(
             }
         }
 
-        // Step 10. ProbCut (skipped when in check, ~10 Elo)
+        // Step 10. ProbCut (~10 Elo)
         // If we have a good enough capture and a reduced search returns a
         // value much above beta, we can (almost) safely prune the previous
         // move.
@@ -1054,7 +1051,7 @@ fn search<NT: NodeType>(
             }
         }
 
-        // Step 11. Internal iterative deepening (skipped when in check, ~2 Elo)
+        // Step 11. Internal iterative deepening (~2 Elo)
         if depth >= 8 * ONE_PLY && tt_move == Move::NONE {
             let d = (3 * depth / (4 * ONE_PLY) - 2) * ONE_PLY;
             search::<NT>(pos, ss, alpha, beta, d, cut_node);

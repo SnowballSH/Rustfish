@@ -1,29 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-extern crate memmap;
+extern crate rustfish;
 
-mod benchmark;
-mod bitbases;
-#[macro_use]
-mod bitboard;
-mod endgame;
-mod evaluate;
-mod material;
-mod misc;
-mod movegen;
-mod movepick;
-mod pawns;
-mod position;
-mod psqt;
-mod search;
-mod tb;
-mod threads;
-mod timeman;
-mod tt;
-mod types;
-mod uci;
-mod ucioption;
-
+use rustfish::*;
 use std::thread;
 
 fn main() {
